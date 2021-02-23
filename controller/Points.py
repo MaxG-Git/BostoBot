@@ -1,4 +1,5 @@
 import logging
+import os
 import BostoBot.toolbox.BostoGeneric as BostoGeneric
 from BostoBot.toolbox.BostoResult import BostoResult as Result
 
@@ -57,8 +58,6 @@ def getWalletValue(user, **kwargs):
     wallet = getTotalWallet(user)
     return sum(wallet)
 
-
-   
 
 
 @BostoConnected
@@ -184,12 +183,46 @@ def getEmojiCode(name, **kwargs):
 def getEmojiName(code, **kwargs):
     return kwargs['connection'].getEmojiName(code)
 
+@BostoConnected
+def isAdmin(user=None, userId=None, **kwargs):
+    if userId != None:
+        return kwargs['connection'].isAdmin(userId) == "TRUE"
+    else:
+        return kwargs['connection'].isAdmin(user.id) == "TRUE"
+
+@BostoConnected
+def getScoreBoard(**kwargs):
+    emojiValue = dict(zip(BostoGeneric.EMOJI_LIST, tuple(map(lambda emojiName: int(getValue(emojiName=emojiName)), BostoGeneric.EMOJI_LIST))))
+    return kwargs['connection'].getScoreBoard(emojiValue)
+
 
 async def removeDiscordReaction(payload, message, reason=""):
     reaction = next(x for x in message.reactions if x.emoji.name == payload.emoji.name)
     logging.info(reason)
     await reaction.remove(payload.member)
     return True
+
+      
+async def scoreBoardUpdate(client):
+    import json
+    from tabulate import tabulate
+    script_dir = os.path.dirname(__file__)
+    rel_path = "../toolbox/settings.json"
+    abs_file_path = os.path.join(script_dir, rel_path)
+   
+    with open(abs_file_path) as f:
+        settings = json.load(f)
+    
+    sbChannel = client.get_channel(settings['score_board']['channel'])
+    sbMessage = await sbChannel.fetch_message(settings['score_board']['message'])
+   
+    
+    data = getScoreBoard()
+    headers = ["Ranking", "User", "Total Point Value"]
+    table = tabulate(data, headers, tablefmt="pretty")
+    table = table.replace("\n", "`\n`")
+    sbMessage = await sbMessage.edit(content="`" +table +"`")
+
 
 
 

@@ -49,20 +49,6 @@ async def on_message(message, *args):
   await event.Message(message, *args)
 
 
-
-
-'''
-def recursive_cog_loader(path = ['./cogs']):
-  for filename in os.listdir("/".join(path)):
-    if filename.endswith('.py') and (filename != 'toolbox.py'):
-      path[0] = "cogs"
-      path.append(filename)
-      client.load_extension(".".join(path))
-      logging.info(f"Loaded Cog: {filename[:-3]}")
-    elif "." not in filename: # Is Folder
-      recursive_cog_loader(path)
-recursive_cog_loader()
-'''
 # Auto Cog Loader
 for filename in BostoBot.COGS:
   if filename.endswith('.py') and not filename.startswith("_"):

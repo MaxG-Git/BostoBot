@@ -60,6 +60,8 @@ class BostoPoints(commands.Cog) :
                     return
 
             logging.info("BostoPoint Successfully Added")
+                
+
         except Exception as err:
             logging.error("Unable to add point")
             logging.error(str(err), True)
@@ -69,25 +71,31 @@ class BostoPoints(commands.Cog) :
         try:
             Points.deposit(payload, message, value) # After this line value point has been deposited
             logging.info("Spendable Updated")
-            
-           
-            if hasattr(payload.member, 'nick') and payload.member.nick != None:
-                fromName = payload.member.nick
-            else:
-                fromName = payload.member.name
-            '''
-            if hasattr(message.author, 'nick') and message.author.nick != None:
-                toName = message.author.nick
-            else:
-                toName = message.author.name
-            '''
-            if value > 1:
-                await payload.member.send(f"A {str(payload.emoji)} has been removed from your wallet")
-            await message.author.send(f"A Wild {str(payload.emoji)} has appeared in your wallet *from {fromName}*")
+        
             
         except Exception as err:
             logging.info("Unable to Updated Spendable")
             return logging.error(str(err))
+
+        try:
+            if hasattr(payload.member, 'nick') and payload.member.nick != None:
+                fromName = payload.member.nick
+            else:
+                fromName = payload.member.name
+
+            if value > 1:
+                await payload.member.send(f"A {str(payload.emoji)} has been removed from your wallet")
+            await message.author.send(f"A Wild {str(payload.emoji)} has appeared in your wallet *from {fromName}*")
+        except discord.errors.HTTPException as err:
+            logging.error("Failed while sending notifications to user")
+            logging.error(str(err))
+        
+        try:
+            await Points.scoreBoardUpdate(self.client)
+            logging.info("Updated Score Board")
+        except Exception as err:
+            logging.info("Unable to update Score Board")
+            logging.info(str(err))
             
         
 
@@ -155,7 +163,6 @@ class BostoPoints(commands.Cog) :
     '''
 
 
-#	id	name	discriminator	bot	nick	bostopoints	
 
            
         
@@ -192,25 +199,30 @@ class BostoPoints(commands.Cog) :
     async def buy(self, ctx):
         import asyncio
         if ctx.guild is not None: return
-        emojiSelection = await ctx.send("Select The Bosto-Emoji You would like to create:")
+        emojiSelection = await ctx.send("Select The Bosto-Emoji You would like to create - *(or ❌ to cancel)*")
         user = ctx.message.author
         emojiCode = dict(zip(BostoGeneric.EMOJI_LIST, tuple(map(Points.getEmojiCode, BostoGeneric.EMOJI_LIST))))
         emojiValue = dict(zip(BostoGeneric.EMOJI_LIST, tuple(map(lambda emojiName: int(Points.getValue(emojiName=emojiName)), BostoGeneric.EMOJI_LIST))))
-        
+        emojiCode['cancel'] = "❌"
 
-        def check(payload):
-            return payload.user_id == ctx.message.author.id and str(payload.emoji) in emojiCode.values()
+       
 
         # Get Desired Emoji
         emojiSelectionOptions = [await emojiSelection.add_reaction(e) for e in emojiCode.values()]
         
 
         try:
-            payload = await self.client.wait_for('raw_reaction_add', timeout=20.0, check=check)
+            payload = await self.client.wait_for('raw_reaction_add', timeout=20.0, \
+            check=lambda payload: payload.user_id == ctx.message.author.id and str(payload.emoji) in emojiCode.values())
         except asyncio.TimeoutError:
             await ctx.send("Time Out")
         else:
             await emojiSelection.delete()
+            if str(payload.emoji) == "❌":
+                cancled = await ctx.send(content="👋")
+                await asyncio.sleep(1)
+                await cancled.delete()
+                return
             
             
             # Desired Emoji Captured 
@@ -231,11 +243,11 @@ class BostoPoints(commands.Cog) :
                         availPayment.append(emojiCode[emj])
             
             if len(availPayment) == 0:
-                await graphic.edit(content=f"Looks like you don't have enough points for a {selected} right now.\n*You can check your points with the `wallet` command*")
+                await graphic.edit(content=f"Looks like you don't have enough points or proper change for a {selected} right now.\n*You can check your points with the `wallet` command or make change by dividing up other Bosto-Emojis*")
                 return
 
-            
-            emojiSelection = await ctx.send(f"Please Choose what you want to convert into a {selected}")
+            availPayment.append("❌")
+            emojiSelection = await ctx.send(f"Please Choose what you want to convert into a {selected} - *(or ❌ to cancel)*")
             emojiSelectionOptions = [await emojiSelection.add_reaction(e) for e in availPayment]
             try:
                 payload = await self.client.wait_for('raw_reaction_add', timeout=20.0, check=lambda payload: payload.user_id == ctx.message.author.id and str(payload.emoji) in availPayment)
@@ -243,6 +255,12 @@ class BostoPoints(commands.Cog) :
                 await ctx.send("Time Out")
             else:
                 await emojiSelection.delete()
+                if str(payload.emoji) == "❌":
+                    await graphic.delete()
+                    cancled = await ctx.send(content="👋")
+                    await asyncio.sleep(1)
+                    await cancled.delete()
+                    return
                 costEmoji = payload.emoji.name
                 costEmojiCode = str(payload.emoji)
                 costEmojiVal = emojiValue[costEmoji]
@@ -251,19 +269,18 @@ class BostoPoints(commands.Cog) :
 
 
                 costEmojiTotalValue = costEmojiVal * costEmojiTotal
-
                 availMax = costEmojiTotalValue // selectedVal
+                availOptions = []
+                availOptionsString = "" 
 
-                availOptionsDivisor = []
                 for i in range(1, availMax+1):
-                    if i % costEmojiVal == 0:
-                        availOptionsDivisor.append("**`"+str(i)+"`**")
+                    if  (i * selectedVal) % costEmojiVal == 0: 
+                        availOptions.append(str(i))
+                        if len(availOptions) < 70:
+                            availOptionsString += "**`"+str(i)+"`**, " if i != availMax else "or **`"+str(i)+"`**"
+                        elif len(availOptions) == 70:
+                            availOptionsString+="..."
 
-                if len(availOptionsDivisor) > 1:
-                    availOptionsDivisor.insert(len(availOptionsDivisor) -1, "or")
-
-                availOptionsDivisorString = ", ".join(availOptionsDivisor)
-                
 
 
                 if availMax == 0:
@@ -271,78 +288,120 @@ class BostoPoints(commands.Cog) :
                     await ctx.send(f"Meow\nLooks like you don't have enough points for a {selected} right now.\nYou have **{costEmojiTotal}** {costEmojiCode}'s you need **{needed}** more for a {selected}")
                     return
 
-                msg1 = await ctx.send(f"You Currently have **`{costEmojiTotal}`** {costEmojiCode}\nYou can create a total of {availOptionsDivisorString} {selected}")
-                msg2 =  await ctx.send(f"Please respond with how many {selected} to create:")
+                
+                msg1 = await ctx.send(f"You Currently have **`{costEmojiTotal}`** {costEmojiCode}\nYou can create a total of {availOptionsString} {selected}")
+                msg2 =  await ctx.send(f"Please respond with how many {selected} to create *(or `cancel` to cancel)*")
                 try:
-                    quantityResponce = await self.client.wait_for('message', timeout=20.0, check=lambda msg: msg.author.id == ctx.message.author.id and str(msg.content).isdigit())
+                    quantityResponce = await self.client.wait_for('message', timeout=20.0, \
+                    check=lambda msg: msg.author.id == ctx.message.author.id and (str(msg.content) in availOptions or str(msg.content).lower() == "cancel"))
                 except asyncio.TimeoutError:
                     await ctx.send("Time Out")
                 else:
+                    await msg1.delete()
+                    await msg2.delete()
+                    if str(quantityResponce.content).lower() == "cancel":
+                        await graphic.delete()
+                        cancled = await ctx.send(content="👋")
+                        await asyncio.sleep(1)
+                        await cancled.delete()
+                        return
+
+
                     quant = int(quantityResponce.content)
                     totalPriceVal = quant * selectedVal
                     costPrice = totalPriceVal // costEmojiVal
-                    logging.info(f"Remove {costPrice} {costEmoji}")
-
-
-
+                    
 
                     priceValue = (quant * costEmojiVal) // selectedVal
                     logging.info(priceValue)
-                   
-                    
-                    
-                    
-                    await msg1.delete()
-                    await msg2.delete()
+                         
+
                     loadString = ""
                     for i in range(0, 3):
                         loadString+= "🔄 "
                         await graphic.edit(content=loadString)
                         await asyncio.sleep(1)
-                    await graphic.edit(content="✅")
+                        
+                    try:
+                        logging.info(f"Attempting removing {costPrice} {costEmoji} and adding {quant} {selectedName}")
+                        Points.decrementWallet(costEmoji, user.id, int(costPrice))
+                        Points.incrementWallet(selectedName, user.id, int(quant))
+                    except Exception as err:
+                        await graphic.edit(content="❌")
+                    else:
+                        await graphic.edit(content="✅")
 
                    
                     
 
-                
-
-        
-                
             
-
 
     @commands.command()
     async def wallet(self, ctx):
-     
-        try:
-            
-            pointNum = Points.getWallet('bostopoint', user=ctx.author)
-            coinNum = Points.getWallet('bostocoin', user=ctx.author)
-            # trophyNum = Points.getWallet('bostotrophie', user=ctx.author)
+        import asyncio
+        user = ctx.message.author
+        
+        totalWallet = Points.getTotalWallet(user=user, convertToDict=True)
+        emojiCode = dict(zip(BostoGeneric.EMOJI_LIST, tuple(map(Points.getEmojiCode, BostoGeneric.EMOJI_LIST))))
+        # trophyNum = Points.getWallet('bostotrophie', user=ctx.author)
 
-            pointEmoji = Points.getEmojiCode(BostoGeneric.EMOJI_LIST[0])
-            coinEmoji = Points.getEmojiCode(BostoGeneric.EMOJI_LIST[1])
-
-            plurals = ['', '']
-
-            if pointNum > 1:
-                plurals[0] = "'s"
-            if coinNum > 1:
-                plurals[1] = "'s"
-
-        except Exception as err:
-            await BostoGeneric.Err(ctx)
-            logging.error(str(err))
-            return
-        if coinNum is None:
-            coinNum = 0
-        await ctx.author.send(pointEmoji)
-        await ctx.author.send(f"You Have Received **{pointNum}** {BostoGeneric.EMOJI_LIST[0].capitalize()}{plurals[0]} and have *`unlimited`* to give out.")
-        await ctx.author.send(coinEmoji)
-        await ctx.author.send(f"You Have **{coinNum}** {BostoGeneric.EMOJI_LIST[1].capitalize()}{plurals[1]} *(You can only give out as much as you have)*")
+        for key, val in emojiCode.items():
+            adtMsg = "*(You can only give out as much as you have)*" if key != BostoGeneric.EMOJI_LIST[0] else "and have *`unlimited`* to give out."
+            await ctx.author.send(emojiCode[key])
+            await ctx.author.send(f"You Have Received **{totalWallet[key]}** {val} {adtMsg}")
+            await asyncio.sleep(1)
+    
+    @commands.command()
+    async def scoreBoardSet(self, ctx, args=None):
+        if not Points.isAdmin(ctx.message.author): return
+        if ctx.guild is None: return
+        import json
 
         
-         
+
+
+        script_dir = os.path.dirname(__file__)
+        rel_path = "../toolbox/settings.json"
+        abs_file_path = os.path.join(script_dir, rel_path)
+        
+
+        
+        with open(abs_file_path) as f:
+            settings = json.load(f)
+
+        settings['score_board']['channel'] = ctx.message.channel.id
+        
+       
+        if str(args).isdigit():
+            settings['score_board']['message'] = int(args)  
+        else:
+            sbMessage = await ctx.send("Score Board")
+            settings['score_board']['message'] = sbMessage.id 
+
+        with open(abs_file_path, 'w') as outfile:
+            json.dump(settings, outfile)
+
+        await ctx.message.delete()
+        logging.info(settings)
+        return await Points.scoreBoardUpdate(self.client)
+
+
+
+
+    @commands.command()
+    async def scoreBoardUpdate(self, ctx):
+        if not Points.isAdmin(ctx.message.author): return
+        await Points.scoreBoardUpdate(self.client)
+
+
+    
+
+        
+
+
+
+            
+              
      
 
 

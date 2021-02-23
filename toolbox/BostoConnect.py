@@ -4,10 +4,6 @@ import BostoBot.toolbox.creds as creds
 import BostoBot.toolbox.BostoGeneric as BostoGeneric
 
 
-
-
-
-
 def sql_logger(origin):
     def wrapper(*args, **kwargs):
         result = origin(*args, **kwargs)
@@ -47,7 +43,7 @@ def fetch_all_completion(origin):
         result = origin(*args, **kwargs)
         fetched = result.cursor.fetchall()
         result.reset()
-        return fetched if isinstance(fetched, tuple) and len(fetched) > 0 else None
+        return fetched if isinstance(fetched, list) and len(fetched) > 0 else None
     return wrapper
 
 
@@ -79,8 +75,6 @@ class BostoConnect():
         self.cursor.close()
 
 
-   #self.connection.commit
-   
     @commit_completion
     @sql_logger
     def addUser(self, _id, name, discriminator, bot, nick):
@@ -109,11 +103,6 @@ class BostoConnect():
         self.cursor.execute(self.sql, self.vals)
         return self
     
-    #	id	author	reacter	messageId	
-    # INSERT INTO `bostopoints` (`id`, `author`, `reacter`, `messageId`) VALUES (NULL, '417803427368796160', '753696196824137831', 'MessageID');
-    
- 
-    
 
     @commit_completion
     @sql_logger
@@ -140,6 +129,13 @@ class BostoConnect():
         self.cursor.execute(self.sql)
         return self
 
+    @first_result_completion
+    @sql_logger
+    def isAdmin(self, userId):
+        self.sql = f"SELECT `is_admin` FROM `users` WHERE `id` =  {userId}"
+        self.cursor.execute(self.sql)
+        return self
+
     @commit_completion
     @sql_logger
     def removePoint(self, pointId):
@@ -147,7 +143,6 @@ class BostoConnect():
         self.cursor.execute(self.sql)
         return self
 
-        #SELECT COUNT(*) FROM `bostopoints` WHERE `author` = '753696196824137831'
 
     @first_result_completion
     @sql_logger
@@ -205,9 +200,7 @@ class BostoConnect():
         self.cursor.execute(self.sql)
         return self
 
-   
 
-        # SELECT * FROM `types` WHERE `name` = 'bostopoint'
     @first_result_completion
     @sql_logger
     def getEmojiCode(self, name):
@@ -229,7 +222,6 @@ class BostoConnect():
         self.cursor.execute(self.sql)
         return self
     
-    
 
     @commit_completion
     @sql_logger
@@ -244,6 +236,22 @@ class BostoConnect():
         self.sql= f"SELECT COUNT(*) FROM `reactions` WHERE `messageId` = {messageId}" 
         self.cursor.execute(self.sql)
         return self
+    
+    
+    @fetch_all_completion
+    @sql_logger
+    def getScoreBoard(self, pointValues: dict):
+        pvTemp = []
+        for key, value in pointValues.items():
+            pvTemp.append(f"(`{key}s` * {value})")
+        pointValueString = " + ".join(pvTemp)
+        self.sql= f'SELECT @rank := @rank+1 as "Ranking", CONCAT(`users`.`name`, "#", `users`.`discriminator`) as "User", {pointValueString} as "Total Bosto-Point Value" FROM `wallet` JOIN `users` ON `users`.`id`= `wallet`.`id` ORDER By "Points" DESC LIMIT 10'
+        self.cursor.execute("SET @rank=0;")
+        self.cursor.execute(self.sql)
+        return self
+
+
+    
 
    
 

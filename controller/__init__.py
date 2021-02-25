@@ -24,6 +24,8 @@ async def on_ready():
 
 @client.command()
 async def load(ctx, extension):
+  import Points
+  if not Points.isAdmin(ctx.message.author): return
   if f'{extension}.py' in os.listdir('./cogs'):
     client.load_extension(f'cogs.{extension}')
     await ctx.send(f'Cog {extension} Loaded!')
@@ -34,6 +36,8 @@ async def load(ctx, extension):
 
 @client.command()
 async def unload(ctx, extension):
+  import Points
+  if not Points.isAdmin(ctx.message.author): return
   if f'cogs.{extension}' in client.extensions:
     client.unload_extension(f'cogs.{extension}')
     await ctx.send(f'Successfully Unloaded Cog: {extension}')

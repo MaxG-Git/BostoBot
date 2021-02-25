@@ -7,6 +7,7 @@ import BostoBot.controller.Points as Points
 
 
 
+
 class BostoPoints(commands.Cog) :
     def __init__(self, client):
         self.client = client
@@ -136,7 +137,8 @@ class BostoPoints(commands.Cog) :
                     return
                 else: # Point was added and 
                     logging.info("Tracked Point deleted assuming attemtted refund, notifying user....")
-                    return await BostoGeneric.Info(reacter, f"You tried to remove a {str(payload.emoji)} from *{message.author.name}'s* message!\n{payload.emoji.name.capitalize()}'s are **not** refundable!\n*(you can add the {payload.emoji.name.capitalize()} emoji back to {message.author.name}'s **original message** if you would like for free)*") # await message.add_reaction(str(payload.emoji))
+                    link = 'https://discordapp.com/channels/{}/{}/{}'.format(message.guild.id, message.channel.id, message.id)
+                    return await BostoGeneric.Info(reacter, f"You tried to remove a {str(payload.emoji)} from *{message.author.name}'s* message!\n{payload.emoji.name.capitalize()}'s are **not** refundable!\n*(you can add the {payload.emoji.name.capitalize()} emoji back to {message.author.name}'s **original message** if you would like for free)*\nOriginal Message: {link}") # await message.add_reaction(str(payload.emoji))
                 
             '''
             logging.info("Attempting to remove point from database....")
@@ -164,50 +166,17 @@ class BostoPoints(commands.Cog) :
 
 
 
-           
-        
-
     @commands.command()
-    async def updateNick(self, ctx, *args):
-        # pylint: disable=not-callable
-        from BostoBot.toolbox.BostoConnect import BostoConnect
-        connection = BostoConnect()
-        try:
-            connection.connect()
-            connection.editUser(field='nick', value=args[0], authorId=ctx.author.id)
-        except Exception:
-            await BostoGeneric.Err(ctx)
-            return
-
-    
-    @commands.command()
-    async def addMe(self, ctx):
-        # pylint: disable=not-callable
-        from BostoBot.toolbox.BostoConnect import BostoConnect
-        connection = BostoConnect()
-        try:
-            connection.connect()
-            #connection.addUser(author=ctx.author)
-        except Exception as err:
-            await BostoGeneric.Err(ctx)
-            logging.error(str(err))
-            return
-
-
-    
-    @commands.command()
-    async def buy(self, ctx):
-        import asyncio
-        if ctx.guild is not None: return
-        emojiSelection = await ctx.send("Select The Bosto-Emoji You would like to create - *(or ❌ to cancel)*")
+    async def buy(self, ctx, *args):
         user = ctx.message.author
+        if ctx.guild is not None: return
+        if not Points.ensureUser(ctx.message.author): return
+        import asyncio
+        emojiSelection = await ctx.send("Select The Bosto-Emoji You would like to create - *(or ❌ to cancel)*")
         emojiCode = dict(zip(BostoGeneric.EMOJI_LIST, tuple(map(Points.getEmojiCode, BostoGeneric.EMOJI_LIST))))
         emojiValue = dict(zip(BostoGeneric.EMOJI_LIST, tuple(map(lambda emojiName: int(Points.getValue(emojiName=emojiName)), BostoGeneric.EMOJI_LIST))))
         emojiCode['cancel'] = "❌"
 
-       
-
-        # Get Desired Emoji
         emojiSelectionOptions = [await emojiSelection.add_reaction(e) for e in emojiCode.values()]
         
 
@@ -282,7 +251,6 @@ class BostoPoints(commands.Cog) :
                             availOptionsString+="..."
 
 
-
                 if availMax == 0:
                     needed = (selectedVal-costEmojiTotalValue) // costEmojiVal
                     await ctx.send(f"Meow\nLooks like you don't have enough points for a {selected} right now.\nYou have **{costEmojiTotal}** {costEmojiCode}'s you need **{needed}** more for a {selected}")
@@ -328,6 +296,7 @@ class BostoPoints(commands.Cog) :
                         Points.incrementWallet(selectedName, user.id, int(quant))
                     except Exception as err:
                         await graphic.edit(content="❌")
+                        logging.error(str(err))
                     else:
                         await graphic.edit(content="✅")
 
@@ -337,9 +306,10 @@ class BostoPoints(commands.Cog) :
             
 
     @commands.command()
-    async def wallet(self, ctx):
+    async def wallet(self, ctx, *args):
         import asyncio
         user = ctx.message.author
+        if not Points.ensureUser(user): return
         
         totalWallet = Points.getTotalWallet(user=user, convertToDict=True)
         emojiCode = dict(zip(BostoGeneric.EMOJI_LIST, tuple(map(Points.getEmojiCode, BostoGeneric.EMOJI_LIST))))
@@ -350,19 +320,26 @@ class BostoPoints(commands.Cog) :
             await ctx.author.send(emojiCode[key])
             await ctx.author.send(f"You Have Received **{totalWallet[key]}** {val} {adtMsg}")
             await asyncio.sleep(1)
+
+    @commands.command()
+    async def updateMe(self, ctx, *args):
+        if ctx.guild != None: return
+        try:
+            Points.updateUser(ctx.message.author)
+            await ctx.send("Updated!")
+            logging.info("Updated user")
+        except Exception:
+            logging.error("Unable to update user")
+    
     
     @commands.command()
-    async def scoreBoardSet(self, ctx, args=None):
+    async def scoreBoardSet(self, ctx, *args):
         if not Points.isAdmin(ctx.message.author): return
+        
+        
         if ctx.guild is None: return
         import json
-
-        
-
-
-        script_dir = os.path.dirname(__file__)
-        rel_path = "../toolbox/settings.json"
-        abs_file_path = os.path.join(script_dir, rel_path)
+        abs_file_path = "/usr/src/app/data/settings.json"
         
 
         
@@ -370,17 +347,18 @@ class BostoPoints(commands.Cog) :
             settings = json.load(f)
 
         settings['score_board']['channel'] = ctx.message.channel.id
-        
        
-        if str(args).isdigit():
-            settings['score_board']['message'] = int(args)  
+        
+        if any(arg.isdigit() for arg in args):
+            settings['score_board']['message'] = BostoGeneric.first(args, settings['score_board']['message'], lambda arg: arg.isdigit(), int)  
         else:
             sbMessage = await ctx.send("Score Board")
             settings['score_board']['message'] = sbMessage.id 
+        
 
         with open(abs_file_path, 'w') as outfile:
             json.dump(settings, outfile)
-
+     
         await ctx.message.delete()
         logging.info(settings)
         return await Points.scoreBoardUpdate(self.client)
@@ -389,9 +367,20 @@ class BostoPoints(commands.Cog) :
 
 
     @commands.command()
-    async def scoreBoardUpdate(self, ctx):
+    async def scoreBoardUpdate(self, ctx, *args):
         if not Points.isAdmin(ctx.message.author): return
         await Points.scoreBoardUpdate(self.client)
+
+   
+    @commands.command()
+    async def stats(self, ctx, *args):
+        if ctx.guild is not None: return
+        if not Points.ensureUser(ctx.message.author): return
+        image = discord.File("/usr/src/app/data/plot.png")
+        sep = any(arg.lower() == 'sep' for arg in args)
+        days = BostoGeneric.first(args, 7, lambda arg: arg.isdigit() and int(arg) < 32 and int(arg) > 4, int)
+        await Points.getPointTimeStat(ctx.author, image, days, sep)
+
 
 
     

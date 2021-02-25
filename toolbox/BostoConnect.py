@@ -78,9 +78,18 @@ class BostoConnect():
     @commit_completion
     @sql_logger
     def addUser(self, _id, name, discriminator, bot, nick):
-        self.vals = (_id, name, discriminator, bot, nick)
-        self.sql = "INSERT INTO users (id, name, discriminator, bot, nick) VALUES (%s, %s, %s, %s, %s)"
-        self.cursor.execute(self.sql, self.vals)
+        self.vals = [str(i) for i in [_id, name, discriminator, bot, nick]]
+        self.sql = "INSERT INTO users (id, name, discriminator, bot, nick) VALUES ({}, {}, {}, {}, {})".format(*self.vals)
+        self.cursor.execute(self.sql)
+        return self
+
+    @commit_completion
+    @sql_logger
+    def updateUser(self, _id, name, discriminator, bot, nick):
+        self.vals = [str(i) for i in [name, discriminator, bot, nick, _id]]
+        self.sql = "UPDATE `users` SET `name` = {}, `discriminator` = {}, `bot` = {}, `nick` = {} WHERE `id` = {}".format(*self.vals)
+        logging.info(self.sql)
+        self.cursor.execute(self.sql)
         return self
 
     @commit_completion
@@ -102,7 +111,7 @@ class BostoConnect():
         self.sql = "UPDATE users SET %s = %s WHERE id = %s"
         self.cursor.execute(self.sql, self.vals)
         return self
-    
+
 
     @commit_completion
     @sql_logger
@@ -245,11 +254,25 @@ class BostoConnect():
         for key, value in pointValues.items():
             pvTemp.append(f"(`{key}s` * {value})")
         pointValueString = " + ".join(pvTemp)
-        self.sql= f'SELECT @rank := @rank+1 as "Ranking", CONCAT(`users`.`name`, "#", `users`.`discriminator`) as "User", {pointValueString} as "Total Bosto-Point Value" FROM `wallet` JOIN `users` ON `users`.`id`= `wallet`.`id` ORDER By "Points" DESC LIMIT 10'
+        self.sql=f'SELECT @rank := @rank +1 AS "Ranking", IFNULL( `users`.`nick`, CONCAT( `users`.`name`, "#", `users`.`discriminator` ) ) AS "User", {pointValueString} AS "Total Bosto-Point Value" FROM `wallet` JOIN `users` ON `users`.`id` = `wallet`.`id` ORDER BY 3 DESC LIMIT 10'
         self.cursor.execute("SET @rank=0;")
         self.cursor.execute(self.sql)
         return self
 
+
+    @fetch_all_completion
+    @sql_logger
+    def getPointTimeStatReceived(self, userId, days):
+        self.sql="SELECT DATE(`reactions`.`time`) AS \"Date\", SUM(`types`.`value`) AS \"Points Recieved\" FROM `reactions` JOIN `types` ON `types`.`name` = `reactions`.`type` WHERE `reactions`.`author` = {} AND `reactions`.`time` BETWEEN CURRENT_TIMESTAMP() - INTERVAL {} DAY AND CURRENT_TIMESTAMP() GROUP BY 1 ORDER BY 1".format(str(userId), days)
+        self.cursor.execute(self.sql)
+        return self
+    
+    @fetch_all_completion
+    @sql_logger
+    def getPointTimeStatGiven(self, userId, days):
+        self.sql="SELECT DATE(`reactions`.`time`) AS \"Date\", SUM(`types`.`value`) AS \"Points Given\" FROM `reactions` JOIN `types` ON `types`.`name` = `reactions`.`type` WHERE `reactions`.`reacter` = {} AND `reactions`.`time` BETWEEN CURRENT_TIMESTAMP() - INTERVAL {} DAY AND CURRENT_TIMESTAMP() GROUP BY 1 ORDER BY 1".format(str(userId), days)
+        self.cursor.execute(self.sql)
+        return self
 
     
 

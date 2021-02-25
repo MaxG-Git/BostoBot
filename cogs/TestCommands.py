@@ -1,5 +1,7 @@
 import discord
 from discord.ext import commands
+import numpy as np
+import matplotlib.pyplot as plt
 
 class TestCommands(commands.Cog) :
     def __init__(self, client):
@@ -32,6 +34,15 @@ class TestCommands(commands.Cog) :
         helptext+=f"{command}\n"
       helptext+="```"
       await ctx.send(helptext)
+
+    @commands.command()
+    async def plot_test(self, ctx, *args):
+      x = args
+      image = discord.File("/usr/src/app/data/plot.png")
+      plt.bar(np.arange(len(x)), x)
+      plt.savefig("/usr/src/app/data/plot.png")
+      plt.close()
+      await ctx.send(file=image)
       
 
     

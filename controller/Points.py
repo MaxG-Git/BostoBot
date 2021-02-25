@@ -1,12 +1,12 @@
 import logging
 import os
 import BostoBot.toolbox.BostoGeneric as BostoGeneric
-from BostoBot.toolbox.BostoResult import BostoResult as Result
+from BostoBot.toolbox.BostoGeneric import BostoResult
 
 def BostoConnected(origin):
     def wrapper(*args, **kwargs):
         try:
-            from BostoBot.toolbox.BostoConnect import BostoConnect
+            from BostoBot.model.BostoConnect import BostoConnect
             import mysql.connector.errors
             connection = BostoConnect()
             connection.connect()
@@ -38,17 +38,17 @@ def ensureUser(user):
 
 
 @BostoConnected
-def addReaction(message, payload, value, **kwargs) -> Result:
+def addReaction(message, payload, value, **kwargs) -> BostoResult:
     author, reacter, emojiName = message.author, payload.member, payload.emoji.name
-    if not ensureUser(author) or not ensureUser(reacter): return Result(False, "user")
+    if not ensureUser(author) or not ensureUser(reacter): return BostoResult(False, "user")
     
     updateUser(reacter)
 
     if value > 1 and not hasFunds(payload, 1):
-        return Result(False, "funds")
+        return BostoResult(False, "funds")
 
     kwargs['connection'].addReaction(authorId=author.id, reacterId=reacter.id, messageId=message.id, emojiType=emojiName)
-    return Result(True)
+    return BostoResult(True)
 
 @BostoConnected
 def getWalletValue(user, **kwargs):
@@ -58,13 +58,13 @@ def getWalletValue(user, **kwargs):
 
 
 @BostoConnected
-def removeReaction(pointId, message, payload, **kwargs) -> Result:
+def removeReaction(pointId, message, payload, **kwargs) -> BostoResult:
     if(pointId is None):
-         return Result(False, "untracked")
+         return BostoResult(False, "untracked")
     else:
         kwargs['connection'].removePoint(pointId)
         logging.info("BostoPoint Successfully Deleted")
-        return Result(True)
+        return BostoResult(True)
 
 
 @BostoConnected
@@ -213,7 +213,6 @@ async def getPointTimeStat(user, imageRef, days, sep=False, **kwargs):
     import matplotlib.dates as dates
     from matplotlib.offsetbox import OffsetImage, AnnotationBbox
     import datetime
-    disb = "#36393F"
     emojiCode = getEmojiCode(BostoGeneric.EMOJI_LIST[0])
 
   
@@ -298,17 +297,12 @@ async def getPointTimeStat(user, imageRef, days, sep=False, **kwargs):
     for a in axes:
         ticks += a.xaxis.get_ticklabels() + a.yaxis.get_ticklabels()
 
-
-    #Set Figure Colors
-    #ax1.tick_params(colors='white')
-    #ax2.tick_params(colors='white')
     [t.set_color('white') for t in ticks]
     
     #Save and send
     plt.savefig("/usr/src/app/data/plot.png", facecolor=fig.get_facecolor(), edgecolor='none')
     plt.close()
     await user.send(file=imageRef, content="Your {} statistics for the past {} days:".format(emojiCode, days))
-
 
 
 async def removeDiscordReaction(payload, message, reason=""):

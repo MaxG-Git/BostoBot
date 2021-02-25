@@ -1,5 +1,6 @@
 import logging
 
+
 async def Err(ctx, msg="Try again or let a server mod know"):
     message = f":crying_cat_face:\nMrrrrrrrrr!\n{msg}"
     await ctx.send(message)
@@ -24,7 +25,15 @@ def first(iterable, default, condition = lambda x: True, filter_true = None, fil
             return default
         else:
             return filter_false(default)
-        
+
+class BostoResult:
+    def __init__(self, result:bool, reason:str = None, error=None, **kwargs):
+        self.result = result
+        self.reason = reason
+        self.error = error
+    
+
+       
             
 
 EMOJI_LIST = ('bostopoint', 'bostocoin', 'bostoaward')

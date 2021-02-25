@@ -31,9 +31,7 @@ class BostoPoints(commands.Cog) :
         try:
             value = int(Points.getValue(payload=payload))
             
-
-            # Check if reaction already exist (applicable for attempted refund on value points)
-            
+            # Check if reaction already exist (applicable for attempted refund on value points)            
             pointId = Points.getPointId(message, payload)
             if not pointId == None:
                 logging.info("Tried to add value point that already exists. Assuming Double add after attempted refund")
@@ -130,7 +128,6 @@ class BostoPoints(commands.Cog) :
             # spendable = int(Points.getSpendable(user=reacter))
             pointId = Points.getPointId(message, payload)
            
-
             if value != 1: # Emoji Has Value...
                 if pointId == None: # Point was never added in the first place
                     logging.info("Un-Tracked Reaction, Assuming auto deletion, (Message handled in reaction_add event)")
@@ -179,7 +176,6 @@ class BostoPoints(commands.Cog) :
 
         emojiSelectionOptions = [await emojiSelection.add_reaction(e) for e in emojiCode.values()]
         
-
         try:
             payload = await self.client.wait_for('raw_reaction_add', timeout=20.0, \
             check=lambda payload: payload.user_id == ctx.message.author.id and str(payload.emoji) in emojiCode.values())
@@ -383,17 +379,6 @@ class BostoPoints(commands.Cog) :
 
 
 
-    
-
-        
-
-
-
-            
-              
-     
-
-
     async def bostopointsFromFromRawReactionActionEvent(self, payload : discord.RawReactionActionEvent):
         if payload.guild_id is None:
             return None # Reaction is on a private message
@@ -441,7 +426,6 @@ class BostoPoints(commands.Cog) :
         except discord.errors.NotFound as err:
             logging.error(f"Unable to locate user ({payload.message_id}) \n{err.text}")
         
-
 
 
 

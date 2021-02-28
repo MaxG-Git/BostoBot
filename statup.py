@@ -33,7 +33,7 @@ class BostoHandler:
             
             if ctx.prefix == None and msgContent[0].lower() in [str(i) for i in self.client.commands]:
                 logging.info(message.author.name + "#" + message.author.discriminator  + " -> " + message.content)
-                await ctx.invoke(self.client.get_command(message.content), *msgContent[1:])
+                await ctx.invoke(self.client.get_command(message.content.lower()), *msgContent[1:])
                 return
 
 
@@ -49,15 +49,19 @@ class BostoHandler:
 def run(cogs):
     client = commands.Bot('b/')
     # On Bot Initiation
-    ready_message = 'Meow from Bosto-Bot!.\nVersion 0.0.1'
+    ready_message = 'Meow from Bosto-Bot!.\nVersion 0.0.2'
 
 
     @client.event
     async def on_ready():
-        logging.info(ready_message)
+      logging.info(ready_message)
+      import BostoBot.controller.Points as Points
+      await client.change_presence(activity=discord.Game(name="DM \"help\" for a list of commands"))
+      Points.SetPoints()
+      
+    
+
     # Load Cogs Command
-
-
     @client.command()
     async def load(ctx, extension):
       import BostoBot.controller.Points as Points
@@ -67,9 +71,9 @@ def run(cogs):
         await ctx.send(f'Cog {extension} Loaded!')
       else:
         await ctx.send(f'Cog {extension} Not Found!')
+    
+
     # Un-Load Cogs Command
-
-
     @client.command()
     async def unload(ctx, extension):
       import BostoBot.controller.Points as Points

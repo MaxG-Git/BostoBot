@@ -38,6 +38,29 @@ def ensureUser(user):
 
 
 @BostoConnected
+def SetPoints( **kwargs):
+    import json
+    import SuperPy.iterable as IsPy
+    allEmojis = {'points' : {key: {"code": code, "value": int(value)} for key, code, value in kwargs['connection'].getAllEmojis()}}
+    abs_file_path = "/usr/src/app/data/settings.json"
+    
+    with open(abs_file_path) as f:
+        settings = json.load(f)
+    
+    settings.update(allEmojis)
+
+    with open(abs_file_path, 'w') as outfile:
+        json.dump(settings, outfile)
+
+@BostoConnected
+def GetPoints(justNames = False, **kwargs):
+    if justNames:
+        return tuple(kwargs['connection'].GetPoints().keys())
+    else:
+        return kwargs['connection'].GetPoints()
+
+
+@BostoConnected
 def addReaction(message, payload, value, **kwargs) -> BostoResult:
     author, reacter, emojiName = message.author, payload.member, payload.emoji.name
     if not ensureUser(author) or not ensureUser(reacter): return BostoResult(False, "user")
@@ -121,7 +144,7 @@ def getTotalWallet(user=None, userId=None, convertToDict=False, **kwargs):
     else:
         result = kwargs['connection'].getTotalWallet(userId)
     if convertToDict:
-        return dict(zip(BostoGeneric.EMOJI_LIST, result))
+        return dict(zip(GetPoints(True), result))
     else:
         return result
 
@@ -201,8 +224,50 @@ def isAdmin(user=None, userId=None, **kwargs):
 
 @BostoConnected
 def getScoreBoard(**kwargs):
-    emojiValue = dict(zip(BostoGeneric.EMOJI_LIST, tuple(map(lambda emojiName: int(getValue(emojiName=emojiName)), BostoGeneric.EMOJI_LIST))))
+    emojiValue = {key: emoji['value'] for key, emoji in GetPoints().items()}
     return kwargs['connection'].getScoreBoard(emojiValue)
+
+@BostoConnected
+async def sendWalletGraphic(user, imageRef, **kwargs):
+    import matplotlib.pyplot as plt
+    from matplotlib.ticker import MaxNLocator
+    import numpy as np
+    from matplotlib.cbook import get_sample_data
+    import matplotlib.dates as dates
+    from matplotlib.offsetbox import OffsetImage, AnnotationBbox
+    import matplotlib.font_manager as font_manager
+    allEmojis = GetPoints()
+    totalWallet = getTotalWallet(user=user, convertToDict=True)
+
+    fig, ax = plt.subplots(figsize=(5, 10))
+    ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+    ax.xaxis.set_major_locator(MaxNLocator(integer=True))
+
+    y = {}
+    
+    index = 0
+    for name in allEmojis.keys():
+        y[name] = index
+        index+=1
+    
+    x = [1] * len(y)
+    ax.plot(x, y.values(), linestyle = 'None')
+    zoom = 0.6 / len(y)
+    prop = font_manager.FontProperties(fname="/usr/src/app/data/uni-sans.heavy-caps.ttf")
+    for name, order in y.items():
+        ab = AnnotationBbox(OffsetImage(plt.imread('/usr/src/app/data/{}.png'.format(name.lower())), zoom), (0.970, order), frameon=False)
+        ax.add_artist(ab)
+        ax.text(1 + (0.045/len(y)), order - 0.05, "× " + str(totalWallet[name.lower()]), fontsize=40, fontproperties=prop, color="white")
+
+
+    plt.axis('off')
+    plt.savefig("/usr/src/app/data/wallet.png", transparent=True)
+    plt.close()
+    await user.send(file=imageRef, content="Your current wallet:")
+    
+    
+
+
 
 @BostoConnected
 async def getPointTimeStat(user, imageRef, days, sep=False, **kwargs):
@@ -219,9 +284,10 @@ async def getPointTimeStat(user, imageRef, days, sep=False, **kwargs):
     #Get Data
     received = {dates.date2num(datetime.datetime.now().date() - datetime.timedelta(i)):0 for i in range(days, 0, -1)}
     given = received.copy()
-    
-    received.update({dates.date2num(d):int(v) for d,v in kwargs['connection'].getPointTimeStatReceived(user.id, days)})
-    given.update({dates.date2num(d):int(v) for d,v in kwargs['connection'].getPointTimeStatGiven(user.id, days)})
+
+    listReplaceNone = lambda result: result if result != None else []
+    received.update({dates.date2num(d):int(v) for d,v in listReplaceNone(kwargs['connection'].getPointTimeStatReceived(user.id, days))})
+    given.update({dates.date2num(d):int(v) for d,v in listReplaceNone(kwargs['connection'].getPointTimeStatGiven(user.id, days))})
     
     y_received = list(received.values())
     x_received = list(received.keys())
@@ -269,22 +335,22 @@ async def getPointTimeStat(user, imageRef, days, sep=False, **kwargs):
         ax2.set_title("Points Given", color="white")
         
         for x0, y0 in received.items():
-            ab = AnnotationBbox(OffsetImage(plt.imread('/usr/src/app/data/BostoPoint.png'), 0.14/days), (x0, y0), frameon=False)
+            ab = AnnotationBbox(OffsetImage(plt.imread('/usr/src/app/data/bostopoint.png'), 0.14/days), (x0, y0), frameon=False)
             ax1.add_artist(ab)
     
         for x0, y0 in given.items():
-            ab = AnnotationBbox(OffsetImage(plt.imread('/usr/src/app/data/BostoPoint.png'), 0.14/days), (x0, y0), frameon=False)
+            ab = AnnotationBbox(OffsetImage(plt.imread('/usr/src/app/data/bostopoint.png'), 0.14/days), (x0, y0), frameon=False)
             ax2.add_artist(ab)
     else:
         ax.plot(x_received, y_received)
         ax.plot(x_given, y_given)
         plt.legend(['Points Received', 'Points Given'], loc='upper left')
         for x0, y0 in received.items():
-            ab = AnnotationBbox(OffsetImage(plt.imread('/usr/src/app/data/BostoPoint.png'), 0.14/days), (x0, y0), frameon=False)
+            ab = AnnotationBbox(OffsetImage(plt.imread('/usr/src/app/data/bostopoint.png'), 0.14/days), (x0, y0), frameon=False)
             ax.add_artist(ab)
 
         for x0, y0 in given.items():
-            ab = AnnotationBbox(OffsetImage(plt.imread('/usr/src/app/data/BostoPoint.png'), 0.14/days), (x0, y0), frameon=False)
+            ab = AnnotationBbox(OffsetImage(plt.imread('/usr/src/app/data/bostopoint.png'), 0.14/days), (x0, y0), frameon=False)
             ax.add_artist(ab)
     
     

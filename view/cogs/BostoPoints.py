@@ -17,8 +17,9 @@ class BostoPoints(commands.Cog) :
     # pylint: disable=not-callable
     async def on_raw_reaction_add(self, payload):
         
+        allEmojis = Points.GetPoints()
         # Cancel If -> (Private message or reaction is not a bostopoint)
-        if (payload.guild_id is None) or (payload.emoji.name not in BostoGeneric.EMOJI_LIST): return
+        if (payload.guild_id is None) or (payload.emoji.name not in allEmojis.keys()): return
         message = await self.messageFromRawReactionActionEvent(payload)
        
         # Check if reaction is self give 
@@ -29,7 +30,7 @@ class BostoPoints(commands.Cog) :
         
         # SQL Starts here
         try:
-            value = int(Points.getValue(payload=payload))
+            value = allEmojis[payload.emoji.name]['value']
             
             # Check if reaction already exist (applicable for attempted refund on value points)            
             pointId = Points.getPointId(message, payload)
@@ -41,7 +42,7 @@ class BostoPoints(commands.Cog) :
             
             if not result.result:
                 if result.reason == 'funds':
-                    await BostoGeneric.Err(payload.member, f"Looks like you are out of {payload.emoji.name.capitalize()}s {str(payload.emoji)}\nUse the `b/wallet` Command to see your {payload.emoji.name.capitalize()}s")
+                    await BostoGeneric.Err(payload.member, f"Looks like you are out of {payload.emoji.name.capitalize()}s {str(payload.emoji)}\nUse the `b/wallet` Command to see your {payload.emoji.name.capitalize()}s\nUse the `b/buy` command to get more {str(payload.emoji)}")
                     try:
                         return await Points.removeDiscordReaction(payload, message, "BostoPoint Not Added (Spendable is 0)")
                     except Exception as err:
@@ -104,7 +105,7 @@ class BostoPoints(commands.Cog) :
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
           # pylint: disable=not-callable
-        if (payload.guild_id is None) or (payload.emoji.name not in BostoGeneric.EMOJI_LIST): return None 
+        if (payload.guild_id is None) or (payload.emoji.name not in Points.GetPoints(True)): return None 
         message = await self.messageFromRawReactionActionEvent(payload)
 
         
@@ -170,12 +171,15 @@ class BostoPoints(commands.Cog) :
         if not Points.ensureUser(ctx.message.author): return
         import asyncio
         emojiSelection = await ctx.send("Select The Bosto-Emoji You would like to create - *(or ❌ to cancel)*")
-        emojiCode = dict(zip(BostoGeneric.EMOJI_LIST, tuple(map(Points.getEmojiCode, BostoGeneric.EMOJI_LIST))))
-        emojiValue = dict(zip(BostoGeneric.EMOJI_LIST, tuple(map(lambda emojiName: int(Points.getValue(emojiName=emojiName)), BostoGeneric.EMOJI_LIST))))
-        emojiCode['cancel'] = "❌"
 
-        emojiSelectionOptions = [await emojiSelection.add_reaction(e) for e in emojiCode.values()]
-        
+        allEmojis = Points.GetPoints()
+        logging.info(allEmojis)
+        emojiCode = {key: emoji['code'] for key, emoji in allEmojis.items()}
+        emojiValue = {key: emoji['value'] for key, emoji in allEmojis.items()}
+        emojiCode['cancel'] = "❌"
+    
+        [await emojiSelection.add_reaction(e) for e in emojiCode.values()]
+      
         try:
             payload = await self.client.wait_for('raw_reaction_add', timeout=20.0, \
             check=lambda payload: payload.user_id == ctx.message.author.id and str(payload.emoji) in emojiCode.values())
@@ -202,7 +206,7 @@ class BostoPoints(commands.Cog) :
 
 
             availPayment = []
-            for emj in BostoGeneric.EMOJI_LIST:
+            for emj in allEmojis.keys():
                 if emj != selectedName:
                     if emojiValue[emj] * totalWallet[emj] >= selectedVal:
                         availPayment.append(emojiCode[emj])
@@ -217,7 +221,7 @@ class BostoPoints(commands.Cog) :
             try:
                 payload = await self.client.wait_for('raw_reaction_add', timeout=20.0, check=lambda payload: payload.user_id == ctx.message.author.id and str(payload.emoji) in availPayment)
             except asyncio.TimeoutError:
-                await ctx.send("Time Out")
+                await ctx.send("Time Out") #TODO Better message here
             else:
                 await emojiSelection.delete()
                 if str(payload.emoji) == "❌":
@@ -259,7 +263,7 @@ class BostoPoints(commands.Cog) :
                     quantityResponce = await self.client.wait_for('message', timeout=20.0, \
                     check=lambda msg: msg.author.id == ctx.message.author.id and (str(msg.content) in availOptions or str(msg.content).lower() == "cancel"))
                 except asyncio.TimeoutError:
-                    await ctx.send("Time Out")
+                    await ctx.send("Time Out") #TODO Better message here
                 else:
                     await msg1.delete()
                     await msg2.delete()
@@ -291,7 +295,7 @@ class BostoPoints(commands.Cog) :
                         Points.decrementWallet(costEmoji, user.id, int(costPrice))
                         Points.incrementWallet(selectedName, user.id, int(quant))
                     except Exception as err:
-                        await graphic.edit(content="❌")
+                        await graphic.edit(content="❌") #TODO Better message here
                         logging.error(str(err))
                     else:
                         await graphic.edit(content="✅")
@@ -303,22 +307,23 @@ class BostoPoints(commands.Cog) :
 
     @commands.command()
     async def wallet(self, ctx, *args):
-        import asyncio
+        if ctx.guild is not None: return
         user = ctx.message.author
         if not Points.ensureUser(user): return
+        import asyncio
+        import SuperPy.iterable as IsPy
+        image = discord.File("/usr/src/app/data/wallet.png")
+        await Points.sendWalletGraphic(ctx.author, image)
         
-        totalWallet = Points.getTotalWallet(user=user, convertToDict=True)
-        emojiCode = dict(zip(BostoGeneric.EMOJI_LIST, tuple(map(Points.getEmojiCode, BostoGeneric.EMOJI_LIST))))
-        # trophyNum = Points.getWallet('bostotrophie', user=ctx.author)
+        
+        
+        
+        
+        
 
-        for key, val in emojiCode.items():
-            adtMsg = "*(You can only give out as much as you have)*" if key != BostoGeneric.EMOJI_LIST[0] else "and have *`unlimited`* to give out."
-            await ctx.author.send(emojiCode[key])
-            await ctx.author.send(f"You Have Received **{totalWallet[key]}** {val} {adtMsg}")
-            await asyncio.sleep(1)
 
     @commands.command()
-    async def updateMe(self, ctx, *args):
+    async def updateme(self, ctx, *args):
         if ctx.guild != None: return
         try:
             Points.updateUser(ctx.message.author)
@@ -329,22 +334,18 @@ class BostoPoints(commands.Cog) :
     
     
     @commands.command()
-    async def scoreBoardSet(self, ctx, *args):
+    async def sbSet(self, ctx, *args):
+        if not Points.ensureUser(ctx.message.author): return
         if not Points.isAdmin(ctx.message.author): return
-        
-        
         if ctx.guild is None: return
         import json
-        abs_file_path = "/usr/src/app/data/settings.json"
-        
 
         
+        abs_file_path = "/usr/src/app/data/settings.json"
         with open(abs_file_path) as f:
             settings = json.load(f)
 
         settings['score_board']['channel'] = ctx.message.channel.id
-       
-        
         if any(arg.isdigit() for arg in args):
             settings['score_board']['message'] = BostoGeneric.first(args, settings['score_board']['message'], lambda arg: arg.isdigit(), int)  
         else:
@@ -356,28 +357,31 @@ class BostoPoints(commands.Cog) :
             json.dump(settings, outfile)
      
         await ctx.message.delete()
-        logging.info(settings)
+      
         return await Points.scoreBoardUpdate(self.client)
 
 
 
 
     @commands.command()
-    async def scoreBoardUpdate(self, ctx, *args):
+    async def sbUpdate(self, ctx, *args):
         if not Points.isAdmin(ctx.message.author): return
         await Points.scoreBoardUpdate(self.client)
 
    
     @commands.command()
     async def stats(self, ctx, *args):
+        import SuperPy.iterable as IsPy
         if ctx.guild is not None: return
         if not Points.ensureUser(ctx.message.author): return
         image = discord.File("/usr/src/app/data/plot.png")
         sep = any(arg.lower() == 'sep' for arg in args)
-        days = BostoGeneric.first(args, 7, lambda arg: arg.isdigit() and int(arg) < 32 and int(arg) > 4, int)
+        days = IsPy.first(args, 7, lambda arg: arg.isdigit() and int(arg) < 32 and int(arg) > 4, int)
         await Points.getPointTimeStat(ctx.author, image, days, sep)
 
 
+
+       
 
     async def bostopointsFromFromRawReactionActionEvent(self, payload : discord.RawReactionActionEvent):
         if payload.guild_id is None:
@@ -387,8 +391,6 @@ class BostoPoints(commands.Cog) :
             return self.bostopointsFromMessage(message) # Calculate total messages points
             
         
-    
-
 
     async def messageFromRawReactionActionEvent(self, payload : discord.RawReactionActionEvent) -> discord.Message :
         """Gets the discord.message Object from a discord.RawReactionActionEvent. The message the 

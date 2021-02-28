@@ -74,6 +74,20 @@ class BostoConnect():
     def close(self):
         self.cursor.close()
 
+    def GetPoints(self):
+        import json
+        abs_file_path = "/usr/src/app/data/settings.json"
+        logging.info("Json Request: "+abs_file_path)
+        with open(abs_file_path) as f:
+            settings = json.load(f)
+        return settings['points']
+
+    @fetch_all_completion
+    @sql_logger
+    def getAllEmojis(self):
+        self.sql = "SELECT `name`, `code`, `value` FROM `types` ORDER BY `value` ASC"
+        self.cursor.execute(self.sql)
+        return self
 
     @commit_completion
     @sql_logger
@@ -95,7 +109,7 @@ class BostoConnect():
     @commit_completion
     @sql_logger
     def addWallet(self, userId):
-        cols = list(map(lambda emoji: f"`{emoji}s`", BostoGeneric.EMOJI_LIST))
+        cols = list(map(lambda emoji: f"`{emoji}s`", tuple(self.GetPoints().keys())))
         allCols = ", ".join(cols)
         self.sql = f"INSERT INTO `wallet` (`id`, {allCols}) VALUES ('{userId}', 0, 0, 0);"
         self.cursor.execute(self.sql)
@@ -165,7 +179,7 @@ class BostoConnect():
     @sql_logger
     def getWallet(self, reactionType, userId):
         
-        if reactionType not in BostoGeneric.EMOJI_LIST:
+        if reactionType not in tuple(self.GetPoints().keys()):
             return logging.error(f"Unknown field type when adding to wallet: {reactionType}")
             
         reactionType = reactionType + "s"
@@ -177,7 +191,7 @@ class BostoConnect():
     @first_row_completion
     @sql_logger
     def getTotalWallet(self,  userId):
-        cols = list(map(lambda emoji: f"`{emoji}s`", BostoGeneric.EMOJI_LIST))
+        cols = list(map(lambda emoji: f"`{emoji}s`", tuple(self.GetPoints().keys())))
         allCols = ", ".join(cols)
         self.sql= f"SELECT {allCols} FROM `wallet` WHERE `id` = {userId}" 
         self.cursor.execute(self.sql)
@@ -189,7 +203,7 @@ class BostoConnect():
     @sql_logger
     def incrementWallet(self, reactionType, userId, cost=1):
         
-        if reactionType not in BostoGeneric.EMOJI_LIST:
+        if reactionType not in tuple(self.GetPoints().keys()):
             return logging.error(f"Unknown field type when adding to wallet: {reactionType}")
             
         reactionType = reactionType + "s"
@@ -201,7 +215,7 @@ class BostoConnect():
     @sql_logger
     def decrementWallet(self, reactionType, userId, cost=1):
         
-        if reactionType not in BostoGeneric.EMOJI_LIST:
+        if reactionType not in tuple(self.GetPoints().keys()):
             return logging.error(f"Unknown field type when adding to wallet: {reactionType}")
             
         reactionType = reactionType + "s"

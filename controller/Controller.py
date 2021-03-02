@@ -4,6 +4,8 @@ import logging
 import os
 import BostoBot.toolbox.BostoGeneric as BostoGeneric
 from BostoBot.model.Model import Model
+from BostoBot.view.View import View
+
 
 def EnsureBostoUser(ctx):
     BaseModel = Model(None)
@@ -14,11 +16,12 @@ def EnsureBostoUser(ctx):
 
 
 class Controller(commands.Cog) :
-    def __init__(self, client, CustomModel = Model):
+    def __init__(self, client, CustomModel = Model, CustomView = View):
         self.client = client
         self.model = CustomModel(client)
+        self.view = CustomView(client)
     
-
+    
     async def bostopointsFromFromRawReactionActionEvent(self, payload : discord.RawReactionActionEvent):
         if payload.guild_id is None:
             return None # Reaction is on a private message

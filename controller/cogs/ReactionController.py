@@ -4,12 +4,14 @@ import logging
 import BostoBot.toolbox.BostoGeneric as BostoGeneric
 from BostoBot.controller.Controller import Controller
 from BostoBot.model.ReactionModel import ReactionModel
+from BostoBot.view.ReactionView import ReactionView
 
 
 class ReactionController(Controller):
     
     def __init__(self, client):
-        super().__init__(client, ReactionModel)
+        super().__init__(client, ReactionModel, ReactionView)
+
 
     
     @commands.Cog.listener()
@@ -25,7 +27,8 @@ class ReactionController(Controller):
         # Check if reaction is self give 
         if message.author.id == payload.user_id and payload.user_id != self.client.user.id:
             reaction = next(x for x in message.reactions if x.emoji.name == payload.emoji.name)
-            await BostoGeneric.Info(payload.member, f"You cant give yourself a {str(payload.emoji)}!")
+            await self.view.selfReactionFailure(payload.member, str(payload.emoji))
+            #await self.view.info(payload.member, f"You cant give yourself a {str(payload.emoji)}!")
             return await reaction.remove(payload.member)
         
         # SQL Starts here
@@ -42,7 +45,8 @@ class ReactionController(Controller):
             
             if not result.result:
                 if result.reason == 'funds':
-                    await BostoGeneric.Err(payload.member, f"Looks like you are out of {payload.emoji.name.capitalize()}s {str(payload.emoji)}\nUse the `b/wallet` Command to see your {payload.emoji.name.capitalize()}s\nUse the `b/buy` command to get more {str(payload.emoji)}")
+                    #await self.view.error(payload.member, f"Looks like you are out of {payload.emoji.name.capitalize()}s {str(payload.emoji)}\nUse the `b/wallet` Command to see your {payload.emoji.name.capitalize()}s\nUse the `b/buy` command to get more {str(payload.emoji)}")
+                    await self.view.fundsFailure(payload.member, payload.emoji.name.capitalize(), str(payload.emoji))
                     try:
                         return await self.model.removeDiscordReaction(payload, message, "BostoPoint Not Added (Spendable is 0)")
                     except Exception as err:
@@ -54,7 +58,8 @@ class ReactionController(Controller):
                     logging.error(str(result.error))
                     return
                 else:
-                    await BostoGeneric.Err(payload.member, f"Looks like you something went wrong when adding a {payload.emoji.name.capitalize()}")
+                    await self.view.unknownAddFailure(payload.member, payload.emoji.name.capitalize())
+                    #await BostoGeneric.Err(payload.member, f"Looks like you something went wrong when adding a {payload.emoji.name.capitalize()}")
                     logging.error("Unknown error whilst adding reaction")
                     logging.error(str(result.error))
                     return
@@ -82,10 +87,12 @@ class ReactionController(Controller):
                 fromName = payload.member.nick
             else:
                 fromName = payload.member.name
-
+            '''
             if value > 1:
                 await payload.member.send(f"A {str(payload.emoji)} has been removed from your wallet")
             await message.author.send(f"A Wild {str(payload.emoji)} has appeared in your wallet *from {fromName}*")
+            '''
+            await self.view.addSuccess(payload.member, message.author, str(payload.emoji), value, fromName)
         except HTTPException as err:
             logging.error("Failed while sending notifications to user")
             logging.error(str(err))
@@ -134,7 +141,8 @@ class ReactionController(Controller):
                 else: # Point was added and 
                     logging.info("Tracked Point deleted assuming attemtted refund, notifying user....")
                     link = 'https://discordapp.com/channels/{}/{}/{}'.format(message.guild.id, message.channel.id, message.id)
-                    return await BostoGeneric.Info(reacter, f"You tried to remove a {str(payload.emoji)} from *{message.author.name}'s* message!\n{payload.emoji.name.capitalize()}'s are **not** refundable!\n*(you can add the {payload.emoji.name.capitalize()} emoji back to {message.author.name}'s **original message** if you would like for free)*\nOriginal Message: {link}") # await message.add_reaction(str(payload.emoji))
+                    return await self.view.attemptedRefundFailure(reacter, str(payload.emoji), payload.emoji.name.capitalize(), message.author.name, link)
+                    #return await BostoGeneric.Info(reacter, f"You tried to remove a {str(payload.emoji)} from *{message.author.name}'s* message!\n{payload.emoji.name.capitalize()}'s are **not** refundable!\n*(you can add the {payload.emoji.name.capitalize()} emoji back to {message.author.name}'s **original message** if you would like for free)*\nOriginal Message: {link}") # await message.add_reaction(str(payload.emoji))
                 
             '''
             logging.info("Attempting to remove point from database....")

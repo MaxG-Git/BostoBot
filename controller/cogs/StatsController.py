@@ -16,6 +16,7 @@ class StatsController(Controller.Controller):
     
     def __init__(self, client):
         super().__init__(client, StatsModel)
+        
 
     @commands.command()
     @commands.dm_only()
@@ -104,8 +105,7 @@ class StatsController(Controller.Controller):
         await user.send(file=imageRef, content="Your {} statistics for the past {} days:".format(emojiCode, days))
 
         
-        
-    
+
 
 def setup(client):
     client.add_cog(StatsController(client))

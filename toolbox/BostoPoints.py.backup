@@ -3,21 +3,20 @@ from discord.ext import commands
 import logging
 import os
 import BostoBot.toolbox.BostoGeneric as BostoGeneric
-import BostoBot.controller.Points as Points
-
-
+from BostoBot.model.BostoPoints import BostoModel
 
 
 class BostoPoints(commands.Cog) :
     def __init__(self, client):
         self.client = client
-
-
+        self.model = BostoModel(client)
+        
+    '''    
     @commands.Cog.listener()
     # pylint: disable=not-callable
     async def on_raw_reaction_add(self, payload):
         
-        allEmojis = Points.GetPoints()
+        allEmojis = self.client.BostoDict
         # Cancel If -> (Private message or reaction is not a bostopoint)
         if (payload.guild_id is None) or (payload.emoji.name not in allEmojis.keys()): return
         message = await self.messageFromRawReactionActionEvent(payload)
@@ -33,18 +32,18 @@ class BostoPoints(commands.Cog) :
             value = allEmojis[payload.emoji.name]['value']
             
             # Check if reaction already exist (applicable for attempted refund on value points)            
-            pointId = Points.getPointId(message, payload)
+            pointId = self.model.getPointId(message, payload)
             if not pointId == None:
                 logging.info("Tried to add value point that already exists. Assuming Double add after attempted refund")
                 return
 
-            result = Points.addReaction(message, payload, value)
+            result = self.model.addReaction(message, payload, value)
             
             if not result.result:
                 if result.reason == 'funds':
                     await BostoGeneric.Err(payload.member, f"Looks like you are out of {payload.emoji.name.capitalize()}s {str(payload.emoji)}\nUse the `b/wallet` Command to see your {payload.emoji.name.capitalize()}s\nUse the `b/buy` command to get more {str(payload.emoji)}")
                     try:
-                        return await Points.removeDiscordReaction(payload, message, "BostoPoint Not Added (Spendable is 0)")
+                        return await self.model.removeDiscordReaction(payload, message, "BostoPoint Not Added (Spendable is 0)")
                     except Exception as err:
                         logging.error("Unable to remove discord reaction on failure")
                         logging.error(str(err))
@@ -69,7 +68,7 @@ class BostoPoints(commands.Cog) :
 
            
         try:
-            Points.deposit(payload, message, value) # After this line value point has been deposited
+            self.model.deposit(payload, message, value) # After this line value point has been deposited
             logging.info("Spendable Updated")
         
             
@@ -91,21 +90,21 @@ class BostoPoints(commands.Cog) :
             logging.error(str(err))
         
         try:
-            await Points.scoreBoardUpdate(self.client)
+            await self.model.scoreBoardUpdate(self.client)
             logging.info("Updated Score Board")
         except Exception as err:
             logging.info("Unable to update Score Board")
             logging.info(str(err))
-            
+    '''        
         
 
         
         
-
+    """
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
           # pylint: disable=not-callable
-        if (payload.guild_id is None) or (payload.emoji.name not in Points.GetPoints(True)): return None 
+        if (payload.guild_id is None) or (payload.emoji.name not in self.client.BostoDict.keys()): return None 
         message = await self.messageFromRawReactionActionEvent(payload)
 
         
@@ -115,7 +114,7 @@ class BostoPoints(commands.Cog) :
         
         # Update BostoPoint Table
         try:
-            value = int(Points.getValue(payload=payload))
+            value = int(self.model.getValue(payload=payload))
         except Exception as err:
             logging.error("Unable to locate value")
             logging.error(str(err))
@@ -127,7 +126,7 @@ class BostoPoints(commands.Cog) :
         try:
             
             # spendable = int(Points.getSpendable(user=reacter))
-            pointId = Points.getPointId(message, payload)
+            pointId = self.model.getPointId(message, payload)
            
             if value != 1: # Emoji Has Value...
                 if pointId == None: # Point was never added in the first place
@@ -140,7 +139,7 @@ class BostoPoints(commands.Cog) :
                 
             '''
             logging.info("Attempting to remove point from database....")
-            result =  Points.removeReaction(pointId, message, payload)
+            result =  self.model.removeReaction(pointId, message, payload)
             if not result.result:
                 logging.error("Unable to remove point")  
                 if result.reason == 'untracked':
@@ -158,9 +157,10 @@ class BostoPoints(commands.Cog) :
     '''
     @commands.Cog.listener()
     async def on_raw_message_delete(self, payload):
-        Points.removeMessage(payload)
+        self.model.removeMessage(payload)
         
     '''
+    
 
 
 
@@ -168,12 +168,11 @@ class BostoPoints(commands.Cog) :
     async def buy(self, ctx, *args):
         user = ctx.message.author
         if ctx.guild is not None: return
-        if not Points.ensureUser(ctx.message.author): return
+        if not self.model.ensureUser(ctx.message.author): return
         import asyncio
         emojiSelection = await ctx.send("Select The Bosto-Emoji You would like to create - *(or ❌ to cancel)*")
 
-        allEmojis = Points.GetPoints()
-        logging.info(allEmojis)
+        allEmojis = self.client.BostoDict
         emojiCode = {key: emoji['code'] for key, emoji in allEmojis.items()}
         emojiValue = {key: emoji['value'] for key, emoji in allEmojis.items()}
         emojiCode['cancel'] = "❌"
@@ -202,7 +201,7 @@ class BostoPoints(commands.Cog) :
 
             
             # Calculate Available Spending Options
-            totalWallet = Points.getTotalWallet(user=user, convertToDict=True)
+            totalWallet = self.model.getTotalWallet(user=user, convertToDict=True)
 
 
             availPayment = []
@@ -278,10 +277,6 @@ class BostoPoints(commands.Cog) :
                     quant = int(quantityResponce.content)
                     totalPriceVal = quant * selectedVal
                     costPrice = totalPriceVal // costEmojiVal
-                    
-
-                    priceValue = (quant * costEmojiVal) // selectedVal
-                    logging.info(priceValue)
                          
 
                     loadString = ""
@@ -292,8 +287,8 @@ class BostoPoints(commands.Cog) :
                         
                     try:
                         logging.info(f"Attempting removing {costPrice} {costEmoji} and adding {quant} {selectedName}")
-                        Points.decrementWallet(costEmoji, user.id, int(costPrice))
-                        Points.incrementWallet(selectedName, user.id, int(quant))
+                        self.model.decrementWallet(costEmoji, user.id, int(costPrice))
+                        self.model.incrementWallet(selectedName, user.id, int(quant))
                     except Exception as err:
                         await graphic.edit(content="❌") #TODO Better message here
                         logging.error(str(err))
@@ -309,24 +304,19 @@ class BostoPoints(commands.Cog) :
     async def wallet(self, ctx, *args):
         if ctx.guild is not None: return
         user = ctx.message.author
-        if not Points.ensureUser(user): return
+        if not self.model.ensureUser(user): return
         import asyncio
         import SuperPy.iterable as IsPy
         image = discord.File("/usr/src/app/data/wallet.png")
-        await Points.sendWalletGraphic(ctx.author, image)
+        await self.model.sendWalletGraphic(ctx.author, image)
         
         
-        
-        
-        
-        
-
 
     @commands.command()
     async def updateme(self, ctx, *args):
         if ctx.guild != None: return
         try:
-            Points.updateUser(ctx.message.author)
+            self.model.updateUser(ctx.message.author)
             await ctx.send("Updated!")
             logging.info("Updated user")
         except Exception:
@@ -335,8 +325,8 @@ class BostoPoints(commands.Cog) :
     
     @commands.command()
     async def sbSet(self, ctx, *args):
-        if not Points.ensureUser(ctx.message.author): return
-        if not Points.isAdmin(ctx.message.author): return
+        if not self.model.ensureUser(ctx.message.author): return
+        if not self.model.isAdmin(ctx.message.author): return
         if ctx.guild is None: return
         import json
 
@@ -358,26 +348,26 @@ class BostoPoints(commands.Cog) :
      
         await ctx.message.delete()
       
-        return await Points.scoreBoardUpdate(self.client)
+        return await self.model.scoreBoardUpdate(self.client)
 
 
 
 
     @commands.command()
     async def sbUpdate(self, ctx, *args):
-        if not Points.isAdmin(ctx.message.author): return
-        await Points.scoreBoardUpdate(self.client)
+        if not self.model.isAdmin(ctx.message.author): return
+        await self.model.scoreBoardUpdate(self.client)
 
    
     @commands.command()
     async def stats(self, ctx, *args):
         import SuperPy.iterable as IsPy
         if ctx.guild is not None: return
-        if not Points.ensureUser(ctx.message.author): return
+        if not self.model.ensureUser(ctx.message.author): return
         image = discord.File("/usr/src/app/data/plot.png")
         sep = any(arg.lower() == 'sep' for arg in args)
         days = IsPy.first(args, 7, lambda arg: arg.isdigit() and int(arg) < 32 and int(arg) > 4, int)
-        await Points.getPointTimeStat(ctx.author, image, days, sep)
+        await self.model.getPointTimeStat(ctx.author, image, days, sep)
 
 
 
@@ -391,7 +381,7 @@ class BostoPoints(commands.Cog) :
             return self.bostopointsFromMessage(message) # Calculate total messages points
             
         
-
+    """
     async def messageFromRawReactionActionEvent(self, payload : discord.RawReactionActionEvent) -> discord.Message :
         """Gets the discord.message Object from a discord.RawReactionActionEvent. The message the 
         discord.RawReactionActionEvent (the message in which has been reacted too) is the message
@@ -449,7 +439,7 @@ class BostoPoints(commands.Cog) :
 
 
 
-    
+
         
       
 def setup(client):

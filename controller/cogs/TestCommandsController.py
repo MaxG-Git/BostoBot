@@ -3,6 +3,7 @@ from discord.ext import commands
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 class TestCommands(commands.Cog) :
     def __init__(self, client):
         self.client = client
@@ -45,7 +46,6 @@ class TestCommands(commands.Cog) :
       await ctx.send(file=image)
       
 
-    
 
     
 

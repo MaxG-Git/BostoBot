@@ -1,7 +1,7 @@
 import logging
 import mysql.connector as mysql
 import BostoBot.toolbox.creds as creds
-import BostoBot.toolbox.BostoGeneric as BostoGeneric
+
 
 
 def sql_logger(origin):

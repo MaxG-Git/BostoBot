@@ -43,7 +43,7 @@ def fetch_all_completion(origin):
         result = origin(*args, **kwargs)
         fetched = result.cursor.fetchall()
         result.reset()
-        return fetched if isinstance(fetched, list) and len(fetched) > 0 else None
+        return fetched if isinstance(fetched, list) and len(fetched) > 0 else ()
     return wrapper
 
 
@@ -51,7 +51,7 @@ class BostoConnect():
     def __init__(self):
         self.connected = False
         self.connection = None
-        self.connect()
+        
         
     def connect(self):
         self.connection = mysql.connect(
@@ -74,13 +74,7 @@ class BostoConnect():
     def close(self):
         self.cursor.close()
 
-    def GetPoints(self):
-        import json
-        abs_file_path = "/usr/src/app/data/settings.json"
-        logging.info("Json Request: "+abs_file_path)
-        with open(abs_file_path) as f:
-            settings = json.load(f)
-        return settings['points']
+
 
     @fetch_all_completion
     @sql_logger
@@ -108,10 +102,11 @@ class BostoConnect():
 
     @commit_completion
     @sql_logger
-    def addWallet(self, userId):
-        cols = list(map(lambda emoji: f"`{emoji}s`", tuple(self.GetPoints().keys())))
+    def addWallet(self, userId, BostoList):
+        cols = list(map(lambda emoji: f"`{emoji}s`", BostoList))
+        vals = ", ".join(["0"] * len(cols))
         allCols = ", ".join(cols)
-        self.sql = f"INSERT INTO `wallet` (`id`, {allCols}) VALUES ('{userId}', 0, 0, 0);"
+        self.sql = f"INSERT INTO `wallet` (`id`, {allCols}) VALUES ('{userId}', {vals});"
         self.cursor.execute(self.sql)
         return self
 
@@ -154,6 +149,13 @@ class BostoConnect():
 
     @first_result_completion
     @sql_logger
+    def checkUserWallet(self, userId):
+        self.sql = f"SELECT COUNT(*) FROM `wallet` WHERE `id` =  {userId}"
+        self.cursor.execute(self.sql)
+        return self
+
+    @first_result_completion
+    @sql_logger
     def isAdmin(self, userId):
         self.sql = f"SELECT `is_admin` FROM `users` WHERE `id` =  {userId}"
         self.cursor.execute(self.sql)
@@ -177,9 +179,9 @@ class BostoConnect():
 
     @first_result_completion
     @sql_logger
-    def getWallet(self, reactionType, userId):
+    def getWallet(self, reactionType, userId, BostoList):
         
-        if reactionType not in tuple(self.GetPoints().keys()):
+        if reactionType not in BostoList:
             return logging.error(f"Unknown field type when adding to wallet: {reactionType}")
             
         reactionType = reactionType + "s"
@@ -190,8 +192,8 @@ class BostoConnect():
 
     @first_row_completion
     @sql_logger
-    def getTotalWallet(self,  userId):
-        cols = list(map(lambda emoji: f"`{emoji}s`", tuple(self.GetPoints().keys())))
+    def getTotalWallet(self,  userId, BostoList):
+        cols = list(map(lambda emoji: f"`{emoji}s`", BostoList))
         allCols = ", ".join(cols)
         self.sql= f"SELECT {allCols} FROM `wallet` WHERE `id` = {userId}" 
         self.cursor.execute(self.sql)
@@ -201,9 +203,9 @@ class BostoConnect():
 
     @commit_completion
     @sql_logger
-    def incrementWallet(self, reactionType, userId, cost=1):
+    def incrementWallet(self, reactionType, userId, BostoList, cost=1):
         
-        if reactionType not in tuple(self.GetPoints().keys()):
+        if reactionType not in BostoList:
             return logging.error(f"Unknown field type when adding to wallet: {reactionType}")
             
         reactionType = reactionType + "s"
@@ -213,9 +215,9 @@ class BostoConnect():
 
     @commit_completion
     @sql_logger
-    def decrementWallet(self, reactionType, userId, cost=1):
+    def decrementWallet(self, reactionType, userId, BostoList, cost=1):
         
-        if reactionType not in tuple(self.GetPoints().keys()):
+        if reactionType not in BostoList:
             return logging.error(f"Unknown field type when adding to wallet: {reactionType}")
             
         reactionType = reactionType + "s"
@@ -268,7 +270,7 @@ class BostoConnect():
         for key, value in pointValues.items():
             pvTemp.append(f"(`{key}s` * {value})")
         pointValueString = " + ".join(pvTemp)
-        self.sql=f'SELECT @rank := @rank +1 AS "Ranking", IFNULL( `users`.`nick`, CONCAT( `users`.`name`, "#", `users`.`discriminator` ) ) AS "User", {pointValueString} AS "Total Bosto-Point Value" FROM `wallet` JOIN `users` ON `users`.`id` = `wallet`.`id` ORDER BY 3 DESC LIMIT 10'
+        self.sql=f'SELECT @rank := @rank +1 AS "Ranking", IFNULL(`users`.`nick`,  `users`.`name`) AS "User", {pointValueString} AS "Total Bosto-Point Value" FROM `wallet` JOIN `users` ON `users`.`id` = `wallet`.`id` ORDER BY 3 DESC LIMIT 10'
         self.cursor.execute("SET @rank=0;")
         self.cursor.execute(self.sql)
         return self
@@ -287,8 +289,40 @@ class BostoConnect():
         self.sql="SELECT DATE(`reactions`.`time`) AS \"Date\", SUM(`types`.`value`) AS \"Points Given\" FROM `reactions` JOIN `types` ON `types`.`name` = `reactions`.`type` WHERE `reactions`.`reacter` = {} AND `reactions`.`time` BETWEEN CURRENT_TIMESTAMP() - INTERVAL {} DAY AND CURRENT_TIMESTAMP() GROUP BY 1 ORDER BY 1".format(str(userId), days)
         self.cursor.execute(self.sql)
         return self
-
     
+
+         #DELETE FROM `types` WHERE `types`.`name` = 'bostogold';
+
+    @commit_completion
+    @sql_logger
+    def addBostoType(self, name, code, value):
+        self.sql = "INSERT INTO `types` (`name`, `code`, `value`) VALUES ('{}', '{}', {})".format(name, code, value)
+        self.cursor.execute(self.sql)
+        return self
+    
+    @commit_completion
+    @sql_logger
+    def removeBostoType(self, name):
+        self.sql = "DELETE FROM `types` WHERE `types`.`name` = '{}'".format(name)
+        self.cursor.execute(self.sql)
+        return self
+
+    @commit_completion
+    @sql_logger
+    def addWalletType(self, typeName, after):
+        if after != 'id': after = after + "s"
+        self.sql = "ALTER TABLE `wallet` ADD `{}s` INT NOT NULL AFTER `{}`".format(typeName, after)
+        self.cursor.execute(self.sql)
+        return self
+    
+
+    @commit_completion
+    @sql_logger
+    def removeWalletType(self, typeName):
+        self.sql = "ALTER TABLE `wallet` DROP `{}s`;".format(typeName)
+        self.cursor.execute(self.sql)
+        return self
+ 
 
    
 

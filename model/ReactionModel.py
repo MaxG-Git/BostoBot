@@ -35,15 +35,15 @@ class ReactionModel(Model.Model):
         if cost == 0: return True
         else:
             reactionType = payload.emoji.name
-            return kwargs['connection'].getWallet(reactionType=reactionType, userId=payload.user_id) >= cost
+            return kwargs['connection'].getWallet(reactionType=reactionType, userId=payload.user_id, BostoList = self.BostoList) >= cost
 
 
     @Model.BostoConnected
     def deposit(self, payload, message, value, **kwargs):
         reactionType = payload.emoji.name
         if value > 1:
-            kwargs['connection'].decrementWallet(reactionType=reactionType, userId=payload.user_id)
-        kwargs['connection'].incrementWallet(reactionType=reactionType, userId=message.author.id)
+            kwargs['connection'].decrementWallet(reactionType=reactionType, userId=payload.user_id, BostoList = self.BostoList)
+        kwargs['connection'].incrementWallet(reactionType=reactionType, userId=message.author.id, BostoList = self.BostoList)
         return
 
     

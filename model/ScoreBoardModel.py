@@ -10,12 +10,6 @@ class ScoreBoardModel(Model.Model):
     def __init__(self, client):
         super().__init__(client)
 
-    def generateTable(self, data):
-        from tabulate import tabulate
-        headers = ["Ranking", "User", "Total Point Value"]
-        table = tabulate(data, headers, tablefmt="pretty")
-        table = table.replace("\n", "`\n`")
-        return table
    
     async def getLocalScoreBoard(self, path):
         import json
@@ -27,7 +21,7 @@ class ScoreBoardModel(Model.Model):
 
     @Model.BostoConnected
     def getScoreBoard(self, **kwargs):
-        emojiValue = {key: emoji['value'] for key, emoji in self.client.BostoDict.items()}
+        emojiValue = {key: emoji['value'] for key, emoji in self.BostoPoints.items()}
         return kwargs['connection'].getScoreBoard(emojiValue)    
  
     

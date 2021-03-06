@@ -1,10 +1,11 @@
+
 from discord.ext import commands
 import BostoBot.toolbox.BostoGeneric as BostoGeneric
 import BostoBot.toolbox.creds as creds
-import os
 import discord
 import json  # -> Getting Credentials
 import logging
+import os
 logging.getLogger().setLevel(logging.INFO)
 
 
@@ -25,16 +26,18 @@ class BostoHandler:
 
 
 def run(cogs):
+    from BostoBot.model.Model import Model
+    Model.SetLocalPoints()
     client = commands.Bot('b/')
     # On Bot Initiation
     ready_message = 'Meow from Bosto-Bot!.\nVersion 0.0.2'
+    
+
+
 
     @client.event
     async def on_ready():
         logging.info(ready_message)
-        from BostoBot.model.Model import Model
-        Model.SetLocalPoints()
-        client.BostoDict = dict(Model.GetDbPoints())
         await client.change_presence(activity=discord.Game(name="DM \"help\" for a list of commands"))
         
 
@@ -49,7 +52,6 @@ def run(cogs):
             await ctx.send(f'Cog {extension.capitalize()} Not Found!')
 
     # Un-Load Cogs Command
-
     @client.command()
     @commands.is_owner()
     async def unload(ctx, extension):
@@ -58,8 +60,32 @@ def run(cogs):
             await ctx.send(f'Successfully Unloaded Cog: {extension.capitalize()}')
         else:
             await ctx.send(f'Cog {extension.capitalize()} Not Found!')
-    # Catch All Event Handler
+    
+ # Un-Load Cogs Command
 
+
+    
+    @client.command()
+    @commands.dm_only()
+    @commands.is_owner()
+    async def reloadcogs(ctx):
+        msg = await ctx.send("Setting Local Points")
+        logging.info("Attempting to reload Cogs")
+        try:
+            Model.SetLocalPoints()
+            cogs = [str(ex) for ex in client.extensions]
+            await msg.edit(content="Reloading cogs... (This may take a second)")
+            for extension in cogs:
+                client.unload_extension(extension)
+                client.load_extension(extension)
+        except Exception as err:
+            logging.error("Failed Reloading Cogs")
+            logging.error(str(err))
+            return await msg.edit("Cogs could not be reloaded... Please check logs")
+        logging.info("Cogs Successfully reloaded")
+        await msg.edit(content="Cogs Successfully reloaded")
+        return await msg.delete(delay=3)
+        
 
     @client.event
     async def on_message(message, *args):
@@ -94,8 +120,3 @@ def run(cogs):
             client.load_extension(f'BostoBot.controller.cogs.{filename[:-3]}')
     # Login at end of script
     client.run(creds.TOKEN)
-
-
-COGS = os.listdir('./BostoBot/controller/cogs/')
-run(COGS)
-

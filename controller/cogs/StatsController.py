@@ -20,6 +20,7 @@ class StatsController(Controller.Controller):
 
     @commands.command()
     @commands.dm_only()
+    @commands.check(Controller.EnsureBostoBase)
     @commands.check(Controller.EnsureBostoUser)
     async def stats(self, ctx, *args):
         if ctx.guild is not None: return
@@ -27,17 +28,19 @@ class StatsController(Controller.Controller):
         imageRef = discord.File("/usr/src/app/data/plot.png")
         sep = any(arg.lower() == 'sep' for arg in args)
         days = IsPy.first(args, 7, lambda arg: arg.isdigit() and int(arg) < 32 and int(arg) > 4, int)
-        emojiCode = self.client.BostoDict[tuple(self.client.BostoDict.keys())[0]]['code']
+        emojiCode = self.model.BostoBase['code']
         user = ctx.author
+        imgPath = "/usr/src/app/data/img/{}.png".format(self.model.BostoList[0])
         
 
         #Get Data
         received = {dates.date2num(datetime.datetime.now().date() - datetime.timedelta(i)):0 for i in range(days, 0, -1)}
         given = received.copy()
-
         listReplaceNone = lambda result: result if result != None else []
         received.update({dates.date2num(d):int(v) for d,v in listReplaceNone(self.model.getPointTimeStatReceived(user, days))})
         given.update({dates.date2num(d):int(v) for d,v in listReplaceNone(self.model.getPointTimeStatGiven(user, days))})
+     
+
 
         y_received = list(received.values())
         x_received = list(received.keys())
@@ -61,7 +64,7 @@ class StatsController(Controller.Controller):
         for a in axes:
             a.xaxis.set_major_formatter(d_format)
             a.yaxis.set_major_locator(MaxNLocator(integer=True))
-            a.xaxis.set_major_formatter("%d")
+          
             a.tick_params(colors='white')
             a.patch.set_facecolor('white')
             a.patch.set_alpha(1)
@@ -73,22 +76,22 @@ class StatsController(Controller.Controller):
             ax2.set_title("Points Given", color="white")
 
             for x0, y0 in received.items():
-                ab = AnnotationBbox(OffsetImage(plt.imread('/usr/src/app/data/bostopoint.png'), 0.14/days), (x0, y0), frameon=False)
+                ab = AnnotationBbox(OffsetImage(plt.imread((imgPath)), 1.14/days), (x0, y0), frameon=False)
                 ax1.add_artist(ab)
 
             for x0, y0 in given.items():
-                ab = AnnotationBbox(OffsetImage(plt.imread('/usr/src/app/data/bostopoint.png'), 0.14/days), (x0, y0), frameon=False)
+                ab = AnnotationBbox(OffsetImage(plt.imread((imgPath)), 1.14/days), (x0, y0), frameon=False)
                 ax2.add_artist(ab)
         else:
             ax.plot(x_received, y_received)
             ax.plot(x_given, y_given)
             plt.legend(['Points Received', 'Points Given'], loc='upper left')
             for x0, y0 in received.items():
-                ab = AnnotationBbox(OffsetImage(plt.imread('/usr/src/app/data/bostopoint.png'), 0.14/days), (x0, y0), frameon=False)
+                ab = AnnotationBbox(OffsetImage(plt.imread((imgPath)), 1.14/days), (x0, y0), frameon=False)
                 ax.add_artist(ab)
 
             for x0, y0 in given.items():
-                ab = AnnotationBbox(OffsetImage(plt.imread('/usr/src/app/data/bostopoint.png'), 0.14/days), (x0, y0), frameon=False)
+                ab = AnnotationBbox(OffsetImage(plt.imread((imgPath)), 1.14/days), (x0, y0), frameon=False)
                 ax.add_artist(ab)
 
 

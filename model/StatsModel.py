@@ -17,7 +17,7 @@ class StatsModel(Model.Model):
 
     @Model.BostoConnected
     def getPointTimeStatGiven(self, user, days, **kwargs):
-        kwargs['connection'].getPointTimeStatGiven(user.id, days)
+        return kwargs['connection'].getPointTimeStatGiven(user.id, days)
 
     '''
     @Model.BostoConnected

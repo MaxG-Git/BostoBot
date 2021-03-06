@@ -2,7 +2,8 @@ import logging
 import os
 import BostoBot.toolbox.BostoGeneric as BostoGeneric
 from BostoBot.toolbox.BostoGeneric import BostoResult
-
+from BostoBot.model.connect.BostoConnect import BostoConnect
+import mysql.connector.errors
 
 def BostoConnected(origin):
     def wrapper(*args, **kwargs):
@@ -22,38 +23,48 @@ def BostoConnected(origin):
 
 
 
-
-
 class Model:
     def __init__(self, client):
         self.client = client
-        try:
-            from BostoBot.model.connect.BostoConnect import BostoConnect
-            import mysql.connector.errors
-            connection = BostoConnect()
-            connection.connect()
-            self.connection = connection
-        except mysql.connector.Error as err:
-            logging.error("Error while connecting to Database")
-            logging.error(str(err))
+        self.resetInstance()
+        
+    def resetInstance(self):
+        self.BostoPoints = dict(self.GetLocalPoints())
+        self.BostoList = tuple(self.BostoPoints.keys())
+        self.BostoBase = self.BostoPoints[self.BostoList[0]] if len(self.BostoList) > 0 else None
+    
 
+    def ensureBostoBase(self):
+        return self.BostoBase != None
+        
     # Used Globally
     def ensureUser(self, user):
         userId = user.id
         userCheck = int(self.checkUser(user))
+        walletCheck = int(self.checkUserWallet(user))
+        
         if userCheck > 1:
              logging.error(f"User: {userId} detected duplicate registrations")
-             return True
         elif userCheck < 1:
             try:
                 self.addUser(user)
-                return True
             except Exception as err:
                 logging.error(f"Unable to add User: {userId}")
                 logging.error(str(err))
                 return False
-        else:
-            return True
+        
+
+        if walletCheck > 1:
+             logging.error(f"User: {userId} detected duplicate Wallets")
+        elif walletCheck < 1:
+            try:
+                self.addWallet(user)
+            except Exception as err:
+                logging.error(f"Unable to add User: {userId}")
+                logging.error(str(err))
+                return False
+        
+        return True
 
     @staticmethod
     def getSettings(path = "/usr/src/app/data/settings.json"):
@@ -70,16 +81,23 @@ class Model:
             json.dump(settings, outfile)
         return settings
 
+    @staticmethod
+    def GetLocalPoints(path = "/usr/src/app/data/settings.json"):
+        return Model.getSettings(path)['points']
+
+
+
     # Used Bot Initiation
     @staticmethod
     @BostoConnected
     def SetLocalPoints(**kwargs):
-        import json
         import BostoBot.toolbox.SuperPy.iterable as IsPy
-        allEmojis = {'points' : {key: {"code": code, "value": int(value)} for key, code, value in tuple(kwargs['connection'].getAllEmojis())}}
+        allEmojis = {'points' : {key: {"code": code, "value": int(value), "name":key} for key, code, value in tuple(kwargs['connection'].getAllEmojis())}}
         settings = Model.getSettings()
         settings.update(allEmojis)
         Model.setSettings(settings)
+    
+
 
 
     @staticmethod
@@ -98,7 +116,7 @@ class Model:
         nick = "'{}'".format(user.nick) if hasattr(user, 'nick') and user.nick != None else "NULL"
         name = "'{}'".format(user.name)
         kwargs['connection'].addUser(user.id, name, user.discriminator, bot, nick) 
-        return self.addWallet(user)
+        return 
 
     # Used Globally
     @BostoConnected
@@ -112,13 +130,18 @@ class Model:
     # Used Globally
     @BostoConnected
     def addWallet(self, user, **kwargs):
-        kwargs['connection'].addWallet(user.id) 
+        kwargs['connection'].addWallet(user.id, self.BostoList) 
         return True
 
     # Used Globally
     @BostoConnected
     def checkUser(self, user, **kwargs):
         return kwargs['connection'].checkUser(user.id)
+    
+    # Used Globally
+    @BostoConnected
+    def checkUserWallet(self, user, **kwargs):
+        return kwargs['connection'].checkUserWallet(user.id)
 
 
     @BostoConnected
@@ -129,12 +152,12 @@ class Model:
 
     @BostoConnected
     def incrementWallet(self, reactionType, userId, cost, **kwargs):
-        kwargs['connection'].incrementWallet(reactionType=reactionType, userId=userId, cost=cost)
+        kwargs['connection'].incrementWallet(reactionType=reactionType, userId=userId, BostoList=self.BostoList, cost=cost)
         return
 
     @BostoConnected
     def decrementWallet(self, reactionType, userId, cost, **kwargs):
-        kwargs['connection'].decrementWallet(reactionType=reactionType, userId=userId, cost=cost)
+        kwargs['connection'].decrementWallet(reactionType=reactionType, userId=userId, BostoList=self.BostoList, cost=cost)
         return
 
 

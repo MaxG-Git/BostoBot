@@ -2,23 +2,24 @@ from discord.ext import commands
 from discord.errors import HTTPException
 import logging
 import BostoBot.toolbox.BostoGeneric as BostoGeneric
-from BostoBot.controller.Controller import Controller
+import BostoBot.controller.Controller as Controller
 from BostoBot.model.ReactionModel import ReactionModel
 from BostoBot.view.ReactionView import ReactionView
 
 
-class ReactionController(Controller):
+class ReactionController(Controller.Controller):
     
     def __init__(self, client):
         super().__init__(client, ReactionModel, ReactionView)
+        
 
 
-    
     @commands.Cog.listener()
     # pylint: disable=not-callable
     async def on_raw_reaction_add(self, payload):
         
-        allEmojis = self.client.BostoDict
+        if not self.model.ensureBostoBase: return
+        allEmojis = self.model.BostoPoints
         # Cancel If -> (Private message or reaction is not a bostopoint)
         if (payload.guild_id is None) or (payload.emoji.name not in allEmojis.keys()): return
         message = await self.messageFromRawReactionActionEvent(payload)
@@ -30,6 +31,7 @@ class ReactionController(Controller):
             await self.view.selfReactionFailure(payload.member, str(payload.emoji))
             #await self.view.info(payload.member, f"You cant give yourself a {str(payload.emoji)}!")
             return await reaction.remove(payload.member)
+        
         
         # SQL Starts here
         try:
@@ -109,8 +111,10 @@ class ReactionController(Controller):
     
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
+          
+        if not self.model.ensureBostoBase: return
           # pylint: disable=not-callable
-        if (payload.guild_id is None) or (payload.emoji.name not in self.client.BostoDict.keys()): return None 
+        if (payload.guild_id is None) or (payload.emoji.name not in self.model.BostoList): return None 
         message = await self.messageFromRawReactionActionEvent(payload)
 
         

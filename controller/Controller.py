@@ -11,7 +11,15 @@ def EnsureBostoUser(ctx):
     BaseModel = Model(None)
     return BaseModel.ensureUser(ctx.message.author)
 
+def EnsureBostoBase(ctx):
+    BaseModel = Model(None)
+    return BaseModel.ensureBostoBase()
 
+def ViewContextAuthor(origin):
+    def wrapper(self, ctx, *args, **kwargs):
+        self.view.setContext(ctx.author)
+        return origin(self, ctx, *args, *kwargs)
+    return wrapper
 
 
 

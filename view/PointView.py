@@ -1,4 +1,4 @@
-from BostoBot.view.View import View
+from BostoBot.view.View import *
 import discord 
 import asyncio
 import logging
@@ -8,6 +8,15 @@ class PointView(View):
     def __init__(self, client):
         super().__init__(client)
 
+
+    async def sendWallet(self, user, image, show_tip):
+        content="Your wallet:"
+    
+        if show_tip:
+            content = self.sometimes(content, "\n*ℹ Use the `v` flag to see point value(s)*", 0.6)
+
+        await user.send(content=content, file=image)
+
     
     async def tradeGetSelected(self, ctx, emojiList):
         embed = discord.Embed(title="Trade Order", 
@@ -16,9 +25,9 @@ class PointView(View):
         )
         embed.set_footer(text="(or ❌ to cancel)")
         
-        action = self.responceAction(
+        action = Action(
             check=lambda payload: payload.user_id == ctx.message.author.id, 
-            reactionOptions= emojiList,
+            reaction_options= emojiList,
             action='raw_reaction_add',
         )
         
@@ -26,8 +35,6 @@ class PointView(View):
             embed = embed,
             actions = action,
             )
-    
-    
     
     
     
@@ -39,13 +46,13 @@ class PointView(View):
         embed.set_footer(text="(or ❌ to cancel)")
         embed.set_thumbnail(url=url)
         embed.add_field(name="Trading Return",
-        value= f"{selected} (value {selectedVal})", 
+        value= f"{selected} *{selectedVal} BP each*", 
         inline=False
         )
 
-        action = self.responceAction(
+        action = Action(
             check=lambda payload: payload.user_id == ctx.message.author.id, 
-            reactionOptions= availPayments,
+            reaction_options= availPayments,
             action='raw_reaction_add'
         )
 
@@ -56,30 +63,30 @@ class PointView(View):
         
     async def tradeGetQuant(self, ctx, selected, selectedVal, costEmojiCode, costEmojiVal, costEmojiTotal, availOptions, availOptionsString, url):
         embed = discord.Embed(title="Trade Order", 
-        description=f"Please respond with **how many** {selected} you want\n\nYou have {costEmojiTotal} {costEmojiCode}\nYou can create a total of {availOptionsString} {selected}\n", 
+        description=f"Please respond with **how many** {selected} you want\n\nYou have {costEmojiTotal} {costEmojiCode}\nYou can trade a total of {availOptionsString} {selected}\n", 
         color=0xFF5733
         )
         embed.set_thumbnail(url=url)
         embed.set_footer(text=f"Respond with given options or \"cancel\"")
         embed.add_field(name="Trading Return",
-         value= f"{selected} (value {selectedVal})", 
+         value= f"{selected} *{selectedVal} BP each*", 
          inline=True
          )
         embed.add_field(name="Trading Cost",
-         value= f"{costEmojiCode} (value {costEmojiVal})", 
+         value= f"{costEmojiCode} *{costEmojiVal} BP each*", 
          inline=True
          )
 
-        messageAction = self.responceAction(
+        messageAction = Action(
             check=lambda msg: msg.author.id == ctx.message.author.id and (str(msg.content) in availOptions or str(msg.content).lower() == "cancel"),
             timeout=55.0,
         
         )
 
-        reactionAction = self.responceAction(
+        reactionAction = Action(
             check=lambda payload: payload.user_id == ctx.message.author.id,
             timeout=55.0,
-            reactionOptions= ["❌"],
+            reaction_options= ["❌"],
             action='raw_reaction_add'
         )
        
@@ -89,6 +96,8 @@ class PointView(View):
             )
     
     async def tradeReceipt(self, message, selected, selectedQuant, costEmojiCode, costEmojiQuant):
+
+        
         embed = discord.Embed(title="Trade Receipt", 
         description=f"Trade Completed!\nYou can check your new points with the `b/wallet` command",
         color=0x149414

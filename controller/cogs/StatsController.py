@@ -18,11 +18,23 @@ class StatsController(Controller.Controller):
         super().__init__(client, StatsModel)
         
 
-    @commands.command()
+    @commands.command(aliases=['stats'])
     @commands.dm_only()
     @commands.check(Controller.EnsureBostoBase)
     @commands.check(Controller.EnsureBostoUser)
-    async def stats(self, ctx, *args):
+    async def info(self, ctx, *args):
+        """
+        This command will show you your current Bosto-Statistics!
+        To use this command type `info` or `stats` followed by any combination of arguments (including none)
+        Your Bosto-Stats are the points were given to you and the points that you gave
+        
+
+          Optional Arguments:
+        ● `sep` : FLAG - This flag argument can be used to separate your points given and points received into 2 separate graphs
+        
+        ● `days` : VAR(int) - This variable is the amount of days in the past from today to graph. The default value of this parater is 7
+
+        """
         if ctx.guild is not None: return
         if not self.model.ensureUser(ctx.message.author): return
         imageRef = discord.File("/usr/src/app/data/plot.png")

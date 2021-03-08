@@ -28,9 +28,10 @@ class BostoHandler:
 def run(cogs):
     from BostoBot.model.Model import Model
     Model.SetLocalPoints()
-    client = commands.Bot('b/')
+    client = commands.Bot('b/', case_insensitive=True)
+    client.remove_command("help")
     # On Bot Initiation
-    ready_message = 'Meow from Bosto-Bot!.\nVersion 0.0.2'
+    ready_message = 'Meow from Bosto-Bot!.\nVersion 0.0.3'
     
 
 
@@ -39,10 +40,11 @@ def run(cogs):
     async def on_ready():
         logging.info(ready_message)
         await client.change_presence(activity=discord.Game(name="DM \"help\" for a list of commands"))
+
         
 
     # Load Cogs Command
-    @client.command()
+    @commands.command(hidden=True)
     @commands.is_owner()
     async def load(ctx, extension):
         if f'{extension.capitalize()}Controller.py' in os.listdir('./BostoBot/controller/cogs/'):
@@ -52,7 +54,7 @@ def run(cogs):
             await ctx.send(f'Cog {extension.capitalize()} Not Found!')
 
     # Un-Load Cogs Command
-    @client.command()
+    @commands.command(hidden=True)
     @commands.is_owner()
     async def unload(ctx, extension):
         if f'BostoBot.controller.cogs.{extension.capitalize()}Controller' in client.extensions:
@@ -65,7 +67,7 @@ def run(cogs):
 
 
     
-    @client.command()
+    @commands.command(hidden=True)
     @commands.dm_only()
     @commands.is_owner()
     async def reloadcogs(ctx):
@@ -100,9 +102,10 @@ def run(cogs):
                          message.author.discriminator + " -> " + message.content)
 
         # Trigger commands in DM channel without prefix needed
+
         if dm:
 
-            if ctx.prefix == None and msgContent[0].lower() in [str(i) for i in client.commands]:
+            if ctx.prefix == None and msgContent[0].lower() in [str(i) for i in client.commands] :
                 message.content = str(client.command_prefix) + str(message.content)
                 logging.info(message.author.name + "#" +
                              message.author.discriminator + " -> " + message.content)

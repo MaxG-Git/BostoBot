@@ -13,7 +13,7 @@ class ScoreBoardController(Controller.Controller):
         super().__init__(client, ScoreBoardModel)
 
 
-    @commands.command()
+    @commands.command(hidden=True)
     @commands.is_owner()
     @commands.guild_only()
     @commands.check(Controller.EnsureBostoBase)
@@ -36,7 +36,7 @@ class ScoreBoardController(Controller.Controller):
 
     
     
-    @commands.command()
+    @commands.command(hidden=True)
     @commands.check(Controller.EnsureBostoBase)
     @sbSet.after_invoke
     async def sbUpdate(self, ctx=None, *args):

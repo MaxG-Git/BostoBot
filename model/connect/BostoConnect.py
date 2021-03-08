@@ -7,7 +7,10 @@ import BostoBot.toolbox.creds as creds
 def sql_logger(origin):
     def wrapper(*args, **kwargs):
         result = origin(*args, **kwargs)
-        logging.info('SQL Request: ' + result.sql%result.vals)
+        try:
+            logging.info('\nSQL Request: ' + origin.__name__ +"\nAffected/Returned rows: {}".format(result.cursor.rowcount) + "\n")
+        except Exception:
+             logging.error('SQL Request: Threw Error while displaying')
         return result
     return wrapper
     
@@ -24,7 +27,6 @@ def first_result_completion(origin):
     def wrapper(*args, **kwargs):
         result = origin(*args, **kwargs)
         fetched = result.cursor.fetchone()
-
         result.reset()
         return fetched[0] if isinstance(fetched, tuple) and len(fetched) > 0 else None
     return wrapper
@@ -36,6 +38,16 @@ def first_row_completion(origin):
         fetched = result.cursor.fetchone()
         result.reset()
         return fetched if isinstance(fetched, tuple) and len(fetched) > 0 else None
+    return wrapper
+
+def first_row_completion_with_column(origin):
+    def wrapper(*args, **kwargs):
+        result = origin(*args, **kwargs)
+        fetched = result.cursor.fetchone()
+        cols = [i[0] for i in result.cursor.description]
+        result.reset()
+        return dict(zip(cols, fetched)) if isinstance(fetched, tuple) and len(fetched) > 0 else None
+
     return wrapper
 
 def fetch_all_completion(origin):
@@ -83,13 +95,14 @@ class BostoConnect():
         self.cursor.execute(self.sql)
         return self
 
+    # Adds User, User wallet, User Settings
     @commit_completion
     @sql_logger
-    def addUser(self, _id, name, discriminator, bot, nick):
-        self.vals = [str(i) for i in [_id, name, discriminator, bot, nick]]
-        self.sql = "INSERT INTO users (id, name, discriminator, bot, nick) VALUES ({}, {}, {}, {}, {})".format(*self.vals)
-        self.cursor.execute(self.sql)
+    def addUser(self, Uid, name, discriminator, bot, nick):
+        #vals = [str(i) for i in [Uid, name, discriminator, bot, nick]]
+        self.cursor.callproc('add_user', (Uid, name, discriminator, bot, nick))
         return self
+
 
     @commit_completion
     @sql_logger
@@ -100,15 +113,6 @@ class BostoConnect():
         self.cursor.execute(self.sql)
         return self
 
-    @commit_completion
-    @sql_logger
-    def addWallet(self, userId, BostoList):
-        cols = list(map(lambda emoji: f"`{emoji}s`", BostoList))
-        vals = ", ".join(["0"] * len(cols))
-        allCols = ", ".join(cols)
-        self.sql = f"INSERT INTO `wallet` (`id`, {allCols}) VALUES ('{userId}', {vals});"
-        self.cursor.execute(self.sql)
-        return self
 
     @commit_completion
     @sql_logger
@@ -184,7 +188,7 @@ class BostoConnect():
         if reactionType not in BostoList:
             return logging.error(f"Unknown field type when adding to wallet: {reactionType}")
             
-        reactionType = reactionType + "s"
+        
         self.sql= f"SELECT `{reactionType}` FROM `wallet` WHERE `id` = {userId}" 
         self.cursor.execute(self.sql)
         return self
@@ -193,7 +197,7 @@ class BostoConnect():
     @first_row_completion
     @sql_logger
     def getTotalWallet(self,  userId, BostoList):
-        cols = list(map(lambda emoji: f"`{emoji}s`", BostoList))
+        cols = list(map(lambda emoji: f"`{emoji}`", BostoList))
         allCols = ", ".join(cols)
         self.sql= f"SELECT {allCols} FROM `wallet` WHERE `id` = {userId}" 
         self.cursor.execute(self.sql)
@@ -208,7 +212,7 @@ class BostoConnect():
         if reactionType not in BostoList:
             return logging.error(f"Unknown field type when adding to wallet: {reactionType}")
             
-        reactionType = reactionType + "s"
+        
         self.sql= f"UPDATE `wallet` SET `{reactionType}` = `{reactionType}` + {cost} WHERE `id` = {userId}" 
         self.cursor.execute(self.sql)
         return self
@@ -220,7 +224,7 @@ class BostoConnect():
         if reactionType not in BostoList:
             return logging.error(f"Unknown field type when adding to wallet: {reactionType}")
             
-        reactionType = reactionType + "s"
+        
         self.sql= f"UPDATE `wallet` SET `{reactionType}` = `{reactionType}` - {cost} WHERE `id` = {userId}" 
         self.cursor.execute(self.sql)
         return self
@@ -268,7 +272,7 @@ class BostoConnect():
     def getScoreBoard(self, pointValues: dict):
         pvTemp = []
         for key, value in pointValues.items():
-            pvTemp.append(f"(`{key}s` * {value})")
+            pvTemp.append(f"(`{key}` * {value})")
         pointValueString = " + ".join(pvTemp)
         self.sql=f'SELECT @rank := @rank +1 AS "Ranking", IFNULL(`users`.`nick`,  `users`.`name`) AS "User", {pointValueString} AS "Total Bosto-Point Value" FROM `wallet` JOIN `users` ON `users`.`id` = `wallet`.`id` ORDER BY 3 DESC LIMIT 10'
         self.cursor.execute("SET @rank=0;")
@@ -310,8 +314,7 @@ class BostoConnect():
     @commit_completion
     @sql_logger
     def addWalletType(self, typeName, after):
-        if after != 'id': after = after + "s"
-        self.sql = "ALTER TABLE `wallet` ADD `{}s` INT NOT NULL AFTER `{}`".format(typeName, after)
+        self.sql = "ALTER TABLE `wallet` ADD `{}` INT NOT NULL DEFAULT '0' AFTER `{}`".format(typeName, after)
         self.cursor.execute(self.sql)
         return self
     
@@ -319,10 +322,31 @@ class BostoConnect():
     @commit_completion
     @sql_logger
     def removeWalletType(self, typeName):
-        self.sql = "ALTER TABLE `wallet` DROP `{}s`;".format(typeName)
+        self.sql = "ALTER TABLE `wallet` DROP `{}`;".format(typeName)
         self.cursor.execute(self.sql)
         return self
- 
+#getSpecificUserSettings
+
+    @first_row_completion_with_column
+    @sql_logger
+    def getUserSettings(self, userId):
+        self.sql="SELECT * FROM `settings` WHERE `id` = {}".format(str(userId))
+        self.cursor.execute(self.sql)
+        return self
+
+    @first_result_completion
+    @sql_logger
+    def getSpecificUserSettings(self, setting, userId):
+        self.sql= "SELECT `{}` FROM `settings` WHERE `id` = {}".format(setting, userId)
+        self.cursor.execute(self.sql)
+        return self
+
+    @commit_completion
+    @sql_logger
+    def changeUserSetting(self, setting, value, userId):
+        self.sql = "UPDATE `settings` SET `{}`='{}' WHERE `id` = {}".format(setting, value, userId)
+        self.cursor.execute(self.sql)
+        return self
 
    
 

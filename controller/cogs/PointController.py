@@ -20,6 +20,13 @@ class BuyController(Controller.Controller):
     @commands.check(Controller.EnsureBostoBase)
     @commands.check(Controller.EnsureBostoUser)
     async def wallet(self, ctx, *args):
+        """
+        This command will show you an image of your **current** wallet.
+
+          Optional Arguments:
+          ● `v` : FLAG - This flag argument can be added in to see Bosto-Point's Values
+
+        """
         user = ctx.message.author
         path = "/usr/src/app/data/wallet.png"
         image = discord.File(path)
@@ -38,11 +45,15 @@ class BuyController(Controller.Controller):
            
 
         if not self.model.GraphPoints(path, marker=marker): return await self.view.error(ctx)
+        
         try:
-            content = "Your wallet:"
-            if not "v" in args:
-                content += "\n*Use the `v` flag to see point value(s)*"
-            await user.send(content=content, file=image)
+            showTip = self.model.getSpecificUserSettings('tool_tips', user) == "TRUE"
+        except Exception as err:
+            showTip = True
+        
+        
+        try:
+            await self.view.sendWallet(user, image=image, show_tip = showTip and "v" not in args)
         except Exception as err:
             logging.error("Error while creating/saving wallet graphic")
             logging.error(str(err))
@@ -58,6 +69,10 @@ class BuyController(Controller.Controller):
     @commands.check(Controller.EnsureBostoBase)
     @commands.check(Controller.EnsureBostoUser)
     async def value(self, ctx, *args):
+        """
+        This command will show you an image of Bosto-Point **Values**.
+        Bosto-Point values is what Bosto-Bot uses to determine what to trade you when using the `trade` command
+        """
         user = ctx.message.author
         path = "/usr/src/app/data/value.png"
         image = discord.File(path)
@@ -89,6 +104,13 @@ class BuyController(Controller.Controller):
     @commands.check(Controller.EnsureBostoBase)
     @commands.check(Controller.EnsureBostoUser)
     async def trade(self, ctx, *args):
+        """
+        Using this command you can trade your Bosto-Points for other types of points!
+
+        To get started just type `trade` and follow the prompts that follow. When trading Bosto-Points, Bosto-Bot
+        will only trade based on the value the particular Bosto-Point. To see the different values of Bosto-Points you can use the `value` command
+        
+        """
         user = ctx.message.author
         import asyncio
         
@@ -97,18 +119,10 @@ class BuyController(Controller.Controller):
         emojiCode = {key: emoji['code'] for key, emoji in allEmojis.items()}
         emojiValue = {key: emoji['value'] for key, emoji in allEmojis.items()}
         emojiCode['cancel'] = "❌"
-
+        tradeOptions = list(emojiCode.values())[1:]
       
-        '''
-        emojiSelection, payload = await self.view.getResponce(ctx, 
-            replyFilter=lambda payload: payload.user_id == ctx.message.author.id, 
-            question= "Select The Bosto-Emoji that you **want**  - *(or ❌ to cancel)*",
-            reactionOptions= emojiCode.values(),
-            clearReactions=False,
-            action='raw_reaction_add',
-            )
-        '''
-        emojiSelection, payload = await self.view.tradeGetSelected(ctx, emojiCode.values())
+        emojiSelection, payload = await self.view.tradeGetSelected(ctx, tradeOptions
+        )
 
         await emojiSelection.delete()
        

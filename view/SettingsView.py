@@ -1,74 +1,106 @@
-from BostoBot.view.View import View
-import asyncio
-import logging
+from BostoBot.view.View import *
+import discord
 
 class SettingsView(View):
 
     def __init__(self, client):
         super().__init__(client)
 
-    
 
-    async def getNewBostoType(self, sendable, author, currentList):
-        
-        return await self.getResponce(sendable, 
-            actions = self.responceAction(
-                reactionOptions=("❌"),
-                filterReactionOptions=False,
-                check=lambda payload: payload.user_id == author.id,  
-                action="raw_reaction_add"
-            ),
-            question="Please react to this message with the new BostoType or click ❌ to cancel",      
+    async def getHelpChoice(self, ctx, options : dict):
+        optList = ["● {} {}".format(key, val) for key, val in options.items()]
+        embed = discord.Embed(
+            title="Help",
+            description="Below is a list of all commands.\nYou **click on the reaction that corresponds with a command** to get more info on the command\n",
+            color = 0x738ADD
         )
-    
-
-    async def getNewBostoTypeValue(self, editable, author, emojiCode):
-        await editable.clear_reactions()
-        editable, message = await self.getResponce(editable, 
-            actions = self.responceAction(check=lambda message: message.author.id == author.id and (message.content.isdigit() or message.content.lower() == 'cancel' )),  
-            question="Please enter the value of the new BostoType " + emojiCode + " or cancel to cancel", \
-        )
-        if message.content.lower() == 'cancel':
-            return False
-        else:
-            return int(message.content)
-    '''
-    async def getNewBostoTypeImage(self, editable, author, emojiCode):
-        editable, repsonce = await self.getResponce(editable, \
-            actions = self.responceAction(check=lambda message: message.author.id == author.id and any(at.filename.lower().endswith("png") for at in message.attachments)),  \
-            question="Please respond with an image of the new BostoType " + emojiCode + " or cancel to cancel", \
-        )
-        return logging.info(repsonce)
-    '''  
-    
-    async def getRemoveBostoType(self, sendable, author, currentList):
-        return await self.getResponce(sendable, 
-            actions = self.responceAction(
-            check=lambda payload: payload.user_id == author.id,  
-            reactionOptions=tuple(list(currentList) + ["❌"]), 
-            action="raw_reaction_add", 
-            ),
-            question="Please react with the point you would like to remove ❌ to cancel"
+        embed.set_thumbnail(url="https://emoji.gg/assets/emoji/3224_info.png")
+        embed.set_footer(text="Please select an option from the list above or ❌ to cancel")
+        embed.add_field(name="Commands", value="\n".join(optList), inline=True)
+        action = Action(
+            check=lambda payload: payload.user_id == ctx.message.author.id,
+            action='raw_reaction_add',
+            reaction_options=options.keys(),
+            )
+        options['❌'] = False
+        return await self.getResponce(ctx, 
+        actions=action,
+        embed=embed,
+        condition= lambda result: options[str(result.emoji)]
         )
 
-    async def getRemoveBostoTypeConfirmation(self, sendable, author, emojiCode):
-        return await self.getResponce(sendable, 
-            actions = self.responceAction(
-            check=lambda message: message.author.id == author.id,  
-            ),
-            question="Are you sure you want to remove {} from **ALL WALLETS** This cannot be un-done!\nType `yes` to confirm".format(emojiCode), 
-            condition=lambda message: message.content.lower() == 'yes'
+    async def getHelpSpecific(self, ctx, name, desc):
+        embed = discord.Embed(
+            title= name.capitalize() +  " Command",
+            description= desc,
+            color = 0x738ADD
         )
-        
-    async def addBostoTypeSuccess(self, editable):
-        await editable.edit(content="BostoType Added! Reloading Cogs...")
-        await editable.delete(delay=6)
-    
-    async def removeBostoTypeSuccess(self, editable):
-        await editable.edit(content="BostoType Removed! Reloading Cogs...")
-        await editable.delete(delay=6)
+        embed.set_thumbnail(url="https://emoji.gg/assets/emoji/3224_info.png")
+       
+        return await ctx.send(embed=embed)
+
         
 
-    async def cancelNewBostoType(self, editable, event = "Add"):
-        await editable.edit(content="Cancled {} Event!".format(event))
-        await editable.delete(delay=6)
+    
+    async def sendSettings(self, user, settings, settingsLocal):
+        embed = discord.Embed(
+            title="Your Settings",
+            description="The following are your personal Bosto-Bot settings\nChange any of your settings by typing: `settings change`",
+            color=0xFF5733
+        )
+        embed.set_thumbnail(url="https://emoji.gg/assets/emoji/5053_Gears.png")
+        for key, val in settingsLocal.items():
+            embed.add_field(name=val['name'], value = self.onOffLabel(settings[key]))
+        await user.send(embed=embed)
+
+    
+    async def getSettingsChangeOption(self, user, settings, settingsLocal):
+       
+        
+        #small_letters = dict(zip(list(map(chr, range(ord('a'), ord('a')+len(settings.keys())))), settings.keys()))
+        settingList = self.optionDict(settingsLocal.keys())
+    
+        optList = ["● {} {}".format(key, settingsLocal[val]['name']) for key, val in settingList.items()]
+        settingList["❌"] = False
+
+        embed = discord.Embed(
+            title="Which setting would you like to change?",
+            description="\n".join(optList),
+            color=0xFF5733
+        )
+        embed.set_thumbnail(url="https://emoji.gg/assets/emoji/5053_Gears.png")
+        embed.set_footer(text="Please respond with the letter that coressponds to the setting you want to change\nClick ❌ to cancel")
+        action = Action(
+            check= lambda payload: payload.user_id == user.id,
+            reaction_options=settingList.keys(),
+            action='raw_reaction_add',
+        )
+        return await self.getResponce(user, embed=embed, actions=action, condition=lambda payload: settingList[str(payload.emoji)])
+
+    async def getSettingsSpecific(self, user, setting, currentValue, settingsLocal):
+        currentValue = settingsLocal[setting]['options'][currentValue]['value']
+        embed = discord.Embed(
+            title = settingsLocal[setting]['name'],
+            description=settingsLocal[setting]['desc'] + "\nThis setting is currently set to:\n**{}**".format(currentValue),
+            color=0xFF5733
+        )
+        optList = ["> {}: {}".format(val['emoji'], val['value']) for val in settingsLocal[setting]['options'].values()]
+        embed.add_field(name="Please Choose an option", value="\n".join(optList))
+        embed.set_thumbnail(url="https://emoji.gg/assets/emoji/5053_Gears.png")
+        embed.set_footer(text="Click ↪ to cancel")
+        action = Action(
+            check= lambda payload: payload.user_id == user.id,
+            reaction_options = [val['emoji'] for val in settingsLocal[setting]['options'].values()]+["↪"],
+            action='raw_reaction_add',
+            
+        )
+        return await self.getResponce(user, embed=embed, actions=action)
+
+ 
+
+    
+
+   
+    @staticmethod
+    def onOffLabel(value):
+        return ":white_check_mark:" if value == "TRUE" else "❌"

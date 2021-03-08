@@ -18,7 +18,7 @@ class ReactionModel(Model.Model):
 
         self.updateUser(reacter)
 
-        if value > 1 and not self.hasFunds(payload, 1):
+        if emojiName != self.BostoBase['name'] and not self.hasFunds(payload, 1):
             return BostoResult(False, "funds")
 
         kwargs['connection'].addReaction(authorId=author.id, reacterId=reacter.id, messageId=message.id, emojiType=emojiName)

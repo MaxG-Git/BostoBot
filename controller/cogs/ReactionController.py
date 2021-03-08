@@ -1,3 +1,4 @@
+import discord
 from discord.ext import commands
 from discord.errors import HTTPException
 import logging
@@ -21,15 +22,24 @@ class ReactionController(Controller.Controller):
         if not self.model.ensureBostoBase: return
         allEmojis = self.model.BostoPoints
         # Cancel If -> (Private message or reaction is not a bostopoint)
-        if (payload.guild_id is None) or (payload.emoji.name not in allEmojis.keys()): return
+        if (payload.guild_id is None) or (payload.emoji.name not in self.model.BostoList): return
+        
+        # Get message
         message = await self.messageFromRawReactionActionEvent(payload)
         
        
-        # Check if reaction is self give 
+        # Check if reaction is self give (do not detect self)
         if message.author.id == payload.user_id and payload.user_id != self.client.user.id:
+            
             reaction = next(x for x in message.reactions if x.emoji.name == payload.emoji.name)
-            await self.view.selfReactionFailure(payload.member, str(payload.emoji))
-            #await self.view.info(payload.member, f"You cant give yourself a {str(payload.emoji)}!")
+            try:
+                await self.view.selfReactionFailure(payload.member, str(payload.emoji))
+            except discord.HTTPException as err:
+                logging.error("Failed Notifying user of self reaction possible bot due to bot:\n" + str(err))
+            except Exception as err:
+                logging.error("Failed Notifying user of self reaction:\n" + str(err))
+            
+            
             return await reaction.remove(payload.member)
         
         
@@ -48,7 +58,13 @@ class ReactionController(Controller.Controller):
             if not result.result:
                 if result.reason == 'funds':
                     #await self.view.error(payload.member, f"Looks like you are out of {payload.emoji.name.capitalize()}s {str(payload.emoji)}\nUse the `b/wallet` Command to see your {payload.emoji.name.capitalize()}s\nUse the `b/buy` command to get more {str(payload.emoji)}")
-                    await self.view.fundsFailure(payload.member, payload.emoji.name.capitalize(), str(payload.emoji))
+                   
+                    try:
+                        showTip = self.model.getSpecificUserSettings('tool_tips', payload.member.id) == "TRUE"
+                    except Exception as err:
+                        showTip = True
+
+                    await self.view.fundsFailure(payload.member, payload.emoji.name.capitalize(), str(payload.emoji), showTip)
                     try:
                         return await self.model.removeDiscordReaction(payload, message, "BostoPoint Not Added (Spendable is 0)")
                     except Exception as err:
@@ -89,12 +105,15 @@ class ReactionController(Controller.Controller):
                 fromName = payload.member.nick
             else:
                 fromName = payload.member.name
+            
+            reacterNotify =  self.model.getSpecificUserSettings('point_remove_notification', payload.member ) == "TRUE"
+            authorNotify =  self.model.getSpecificUserSettings('point_add_notification', message.author) == "TRUE"
             '''
             if value > 1:
                 await payload.member.send(f"A {str(payload.emoji)} has been removed from your wallet")
             await message.author.send(f"A Wild {str(payload.emoji)} has appeared in your wallet *from {fromName}*")
             '''
-            await self.view.addSuccess(payload.member, message.author, str(payload.emoji), value, fromName)
+            await self.view.addSuccess(payload.member, message.author, str(payload.emoji), value, fromName, reacterNotify, authorNotify)
         except HTTPException as err:
             logging.error("Failed while sending notifications to user")
             logging.error(str(err))
@@ -145,7 +164,7 @@ class ReactionController(Controller.Controller):
                 else: # Point was added and 
                     logging.info("Tracked Point deleted assuming attemtted refund, notifying user....")
                     link = 'https://discordapp.com/channels/{}/{}/{}'.format(message.guild.id, message.channel.id, message.id)
-                    return await self.view.attemptedRefundFailure(reacter, str(payload.emoji), payload.emoji.name.capitalize(), message.author.name, link)
+                    return await self.view.attemptedRefundFailure(reacter, message, str(payload.emoji), payload.emoji.name.capitalize(), link)
                     #return await BostoGeneric.Info(reacter, f"You tried to remove a {str(payload.emoji)} from *{message.author.name}'s* message!\n{payload.emoji.name.capitalize()}'s are **not** refundable!\n*(you can add the {payload.emoji.name.capitalize()} emoji back to {message.author.name}'s **original message** if you would like for free)*\nOriginal Message: {link}") # await message.add_reaction(str(payload.emoji))
                 
             '''

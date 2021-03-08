@@ -28,6 +28,8 @@ class Controller(commands.Cog) :
         self.client = client
         self.model = CustomModel(client)
         self.view = CustomView(client)
+
+
     
     
     async def bostopointsFromFromRawReactionActionEvent(self, payload : discord.RawReactionActionEvent):

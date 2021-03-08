@@ -15,7 +15,7 @@ def BostoConnected(origin):
             kwargs['connection'] = connection
             return origin(*args, **kwargs)
         except mysql.connector.Error as err:
-            logging.error("Error while connecting to Database")
+            logging.error("Mysql Error: (un-caught)")
             logging.error(str(err))
     return wrapper
 
@@ -41,24 +41,12 @@ class Model:
     def ensureUser(self, user):
         userId = user.id
         userCheck = int(self.checkUser(user))
-        walletCheck = int(self.checkUserWallet(user))
         
         if userCheck > 1:
              logging.error(f"User: {userId} detected duplicate registrations")
         elif userCheck < 1:
             try:
-                self.addUser(user)
-            except Exception as err:
-                logging.error(f"Unable to add User: {userId}")
-                logging.error(str(err))
-                return False
-        
-
-        if walletCheck > 1:
-             logging.error(f"User: {userId} detected duplicate Wallets")
-        elif walletCheck < 1:
-            try:
-                self.addWallet(user)
+                self.addUser(user) # Adds User, User's Wallet, And User's Settings
             except Exception as err:
                 logging.error(f"Unable to add User: {userId}")
                 logging.error(str(err))
@@ -69,6 +57,7 @@ class Model:
     @staticmethod
     def getSettings(path = "/usr/src/app/data/settings.json"):
         import json
+        
         with open(path) as f:
             settings = json.load(f)
         return settings
@@ -85,6 +74,10 @@ class Model:
     def GetLocalPoints(path = "/usr/src/app/data/settings.json"):
         return Model.getSettings(path)['points']
 
+    @staticmethod
+    def getLocalUserSettings(path = "/usr/src/app/data/settings.json"):
+        return Model.getSettings(path)['userSettings']
+
 
 
     # Used Bot Initiation
@@ -99,7 +92,6 @@ class Model:
     
 
 
-
     @staticmethod
     @BostoConnected
     def GetDbPoints(justNames = False, **kwargs):
@@ -112,10 +104,10 @@ class Model:
     # Used Globally
     @BostoConnected
     def addUser(self, user, **kwargs):
-        bot = "'{}'".format(str(user.bot).upper())
-        nick = "'{}'".format(user.nick) if hasattr(user, 'nick') and user.nick != None else "NULL"
-        name = "'{}'".format(user.name)
-        kwargs['connection'].addUser(user.id, name, user.discriminator, bot, nick) 
+        bot = "{}".format(str(user.bot).upper())
+        nick = "{}".format(user.nick) if hasattr(user, 'nick') and user.nick != None else None
+        name = "{}".format(user.name)
+        kwargs['connection'].addUser(user.id, name, user.discriminator, bot, nick)
         return 
 
     # Used Globally
@@ -126,12 +118,7 @@ class Model:
         name = "'{}'".format(user.name)
         return kwargs['connection'].updateUser(user.id, name, user.discriminator, bot, nick)
 
-   
-    # Used Globally
-    @BostoConnected
-    def addWallet(self, user, **kwargs):
-        kwargs['connection'].addWallet(user.id, self.BostoList) 
-        return True
+
 
     # Used Globally
     @BostoConnected
@@ -189,6 +176,14 @@ class Model:
     @BostoConnected
     def getEmojiName(self, code, **kwargs):
         return kwargs['connection'].getEmojiName(code)
+
+
+    @BostoConnected
+    def getSpecificUserSettings(self, setting, user=None, userId=None, **kwargs):
+        if userId != None:
+            return kwargs['connection'].getSpecificUserSettings(setting, userId)
+        else:
+            return kwargs['connection'].getSpecificUserSettings(setting, user.id)
 
     @BostoConnected
     def isAdmin(self, user=None, userId=None, **kwargs):

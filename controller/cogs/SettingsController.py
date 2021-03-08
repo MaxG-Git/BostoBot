@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import logging
 import BostoBot.startup
+import BostoBot.toolbox.SuperPy.iterable as IsPy
 import BostoBot.controller.Controller as Controller
 from BostoBot.model.SettingsModel import SettingsModel 
 from BostoBot.view.SettingsView import SettingsView
@@ -10,58 +11,118 @@ class SettingsController(Controller.Controller):
     
     def __init__(self, client):
         super().__init__(client, SettingsModel, SettingsView)
+
+
+    @commands.command()
+    @commands.dm_only()
+    @commands.check(Controller.EnsureBostoBase)
+    @commands.check(Controller.EnsureBostoUser)
+    async def help(self, ctx, givencommand=None):
+        """
+        The help command is the command you are currently using. 
+        To use this command type `help` and select the command you want to see more information on.
+
+        This command can help you understand all the commands Bosto-Bot has. Some of the information included may contain; How to use the command, What the command does, and different paramters the command accepts
+
+        **ℹ Some useful information**:
+
+        ● Arguments can be a of 2 different types: (VAR, FLAG)\n
+        ● FLAG - This type of argument is a binary on/off to use this argument include the flag while running the command\n
+        ● VAR - This is a parameter much like a parameter in a function can be any value\n
+
+        Optional Arguments:
+        ● `command` : VAR - Bypass the initial help menu by passing a command name to the command
+        """
+
+
+        userCommands = {com.name:com for com in self.client.commands if not com.hidden}
+        userCommands = dict( sorted(userCommands.items(), key=lambda x: x[0].lower()) )
+        options = self.view.optionDict(userCommands, [com[0] for com in userCommands.keys()])
+        if givencommand not in userCommands.keys():
+            question, selectedCommandName = await self.view.getHelpChoice(ctx, options)
+            await question.delete()
+            
+            if selectedCommandName == False:
+                bye = await ctx.send("👋")
+                await bye.delete(delay=5)
+                return 
+
+            selectedCommand = userCommands[selectedCommandName]
+        else:
+            selectedCommand = userCommands[givencommand]
+
+       
+        await self.view.getHelpSpecific(ctx,  selectedCommand.name, selectedCommand.help)
+        
+
+
+
+
+        
+
     
     @commands.command()
-    @commands.is_owner()
-    @commands.guild_only()
-    async def addpoint(self, ctx, *args):
-        await ctx.message.delete()
-        
-        question, newReaction = await self.view.getNewBostoType(ctx, ctx.message.author, self.model.BostoList)
-
-        if newReaction == False or str(newReaction.emoji) == "❌":
-            await self.view.cancelNewBostoType(question)
-        else:
-            self.model.retrieveImage(str(newReaction.emoji.url), newReaction.emoji.name.lower())
-            value = await self.view.getNewBostoTypeValue(question, ctx.message.author, str(newReaction.emoji))
-            
-            if value == False:
-                await self.view.cancelNewBostoType(question)
-            else:
-                self.model.addBostoType(newReaction, value)
-                await self.view.addBostoTypeSuccess(question)
-                return await ctx.invoke(self.client.get_command('reloadcogs'))
-        
-    @commands.command()
-    @commands.is_owner()
     @commands.dm_only()
-    async def removepoint(self, ctx, *args):
+    @commands.check(Controller.EnsureBostoBase)
+    @commands.check(Controller.EnsureBostoUser)
+    async def settings(self, ctx, *args):
+        """
+        This is your personal settings panel!
+        To use this command type `settings` to view your settings
+        
+        You can change your settings use the `change` flag by typing `settings change` and follow the prompts
 
-        question, removeReaction = await self.view.getRemoveBostoType(ctx, ctx.message.author, [point['code'] for point in self.model.BostoPoints.values()])
+        This allows you to control some specific user settings for Bosto-Bot like when Bosto-Bot sends you notifications and other useful settings that may be helpful. Make sure to check the periodically as more settings will be added!
+        
+        Optional Arguments:
+        ● `change` : FLAG - Get settings editing menu when this flag is used
+        """
 
-        if removeReaction == False or str(removeReaction.emoji) == "❌":
-            await self.view.cancelNewBostoType(question, "BostoType Removal")
-        else:
+        args = [arg.lower() for arg in args]
+        settings = self.model.getUserSettings(ctx.message.author)
+        settingsLocal = self.model.getLocalUserSettings()
+        
+
+
+        if "change" in args:
+            question, newSetting = await self.view.getSettingsChangeOption(ctx.message.author, settings, settingsLocal)
             await question.delete()
-            question, confirmed = await self.view.getRemoveBostoTypeConfirmation(ctx, ctx.message.author, str(removeReaction.emoji))
-           
-            if not confirmed:
-                await self.view.cancelNewBostoType(question, "BostoType Removal")
-            else:
-                self.model.removeBostoType(removeReaction)
-                self.model.removeImage(removeReaction.emoji.name)
-                await self.view.removeBostoTypeSuccess(question)
-                return await ctx.invoke(self.client.get_command('reloadcogs'))
-                
-    @commands.command()
-    async def emb(self, ctx):
-        embed=discord.Embed(title="Buy Order", 
-        description="Buy Order", 
-        color=0xFF5733)
-        await ctx.send(embed=embed)   
+            
+            if newSetting == False:
+                bye = await ctx.send("👋")
+                await bye.delete(delay=5)
+                return
+            
+            
+            question, newSettingValueResponce = await self.view.getSettingsSpecific(ctx.message.author, newSetting, settings[newSetting], settingsLocal)
+            await question.delete()
             
 
+            if newSettingValueResponce == False or str(newSettingValueResponce.emoji) == "↪":
+                bye = await ctx.send("👋")
+                await bye.delete(delay=5)
+                return
+            
+            newSettingValue = {val['emoji']:key for key, val in settingsLocal[newSetting]['options'].items()}[str(newSettingValueResponce.emoji)]
 
+        
+            try: 
+                self.model.changeUserSetting(newSetting, newSettingValue, ctx.message.author)
+            except Exception as err:
+                logging.error("Error Updating user setting:\n" + str(err))
+                bye = await ctx.send("Error while updating setting! Please tell a mod!")
+                await bye.delete(delay=5)
+            else:
+                bye = await ctx.send("Setting Updated!")
+                await bye.delete(delay=5)
+
+        else:
+            await self.view.sendSettings(ctx.message.author, settings, settingsLocal)
+            return
+
+        
+
+    
 
 def setup(client):
     client.add_cog(SettingsController(client))

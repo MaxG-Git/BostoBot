@@ -8,7 +8,7 @@ def sql_logger(origin):
     def wrapper(*args, **kwargs):
         result = origin(*args, **kwargs)
         try:
-            logging.info('\nSQL Request: ' + origin.__name__ +"\nAffected/Returned rows: {}".format(result.cursor.rowcount) + "\n")
+            logging.info(origin.__name__ +"\n" + 'SQL REQUEST: ' + result.cursor.statement +"\nAffected/Returned rows: {}".format(result.cursor.rowcount))
         except Exception:
              logging.error('SQL Request: Threw Error while displaying')
         return result
@@ -109,7 +109,7 @@ class BostoConnect():
     def updateUser(self, _id, name, discriminator, bot, nick):
         self.vals = [str(i) for i in [name, discriminator, bot, nick, _id]]
         self.sql = "UPDATE `users` SET `name` = {}, `discriminator` = {}, `bot` = {}, `nick` = {} WHERE `id` = {}".format(*self.vals)
-        logging.info(self.sql)
+        #logging.info(self.sql)
         self.cursor.execute(self.sql)
         return self
 

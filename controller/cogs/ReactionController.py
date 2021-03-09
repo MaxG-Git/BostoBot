@@ -26,7 +26,10 @@ class ReactionController(Controller.Controller):
         
         # Get message
         message = await self.messageFromRawReactionActionEvent(payload)
-        
+        try:
+            logging.info("\n\n\nREACTION: {} --> {}".format(payload.member.name, message.author.name))
+        except Exception:
+            logging.error("\n\n\nUnable to print reaction useres")
        
         # Check if reaction is self give (do not detect self)
         if message.author.id == payload.user_id and payload.user_id != self.client.user.id:

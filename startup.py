@@ -98,7 +98,7 @@ def run(cogs):
         ctx = await client.get_context(message)
 
         if ctx.prefix == client.command_prefix:
-            logging.info(message.author.name + "#" +
+            logging.info("\n\n\nCOMMAND: " + message.author.name + "#" +
                          message.author.discriminator + " -> " + message.content)
 
         # Trigger commands in DM channel without prefix needed
@@ -107,7 +107,7 @@ def run(cogs):
 
             if ctx.prefix == None and msgContent[0].lower() in [str(i) for i in client.commands] :
                 message.content = str(client.command_prefix) + str(message.content)
-                logging.info(message.author.name + "#" +
+                logging.info("\n\n\nCOMMAND: " + message.author.name + "#" +
                              message.author.discriminator + " -> " + message.content)
                 await client.process_commands(message)
                 #await ctx.invoke(client.get_command(message.content.lower()), *msgContent[1:])

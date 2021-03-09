@@ -31,7 +31,7 @@ def run(cogs):
     client = commands.Bot('b/', case_insensitive=True)
     client.remove_command("help")
     # On Bot Initiation
-    ready_message = 'Meow from Bosto-Bot!.\nVersion 0.0.3'
+    ready_message = 'Meow from Bosto-Bot!.\nVersion 0.0.4'
     
 
 
@@ -39,12 +39,11 @@ def run(cogs):
     @client.event
     async def on_ready():
         logging.info(ready_message)
-        await client.change_presence(activity=discord.Game(name="DM \"help\" for a list of commands"))
-
+        await client.change_presence(activity=discord.Game(name="DM help for command list"))
         
 
     # Load Cogs Command
-    @commands.command(hidden=True)
+    @client.command(hidden=True)
     @commands.is_owner()
     async def load(ctx, extension):
         if f'{extension.capitalize()}Controller.py' in os.listdir('./BostoBot/controller/cogs/'):
@@ -67,15 +66,16 @@ def run(cogs):
 
 
     
-    @commands.command(hidden=True)
-    @commands.dm_only()
+    @client.command(hidden=True)
     @commands.is_owner()
+    @commands.dm_only()
     async def reloadcogs(ctx):
         msg = await ctx.send("Setting Local Points")
         logging.info("Attempting to reload Cogs")
         try:
             Model.SetLocalPoints()
             cogs = [str(ex) for ex in client.extensions]
+            logging.info(cogs)
             await msg.edit(content="Reloading cogs... (This may take a second)")
             for extension in cogs:
                 client.unload_extension(extension)

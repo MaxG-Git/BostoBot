@@ -45,15 +45,11 @@ class BuyController(Controller.Controller):
            
 
         if not self.model.GraphPoints(path, marker=marker): return await self.view.error(ctx)
-        
-        try:
-            showTip = self.model.getSpecificUserSettings('tool_tips', user) == "TRUE"
-        except Exception as err:
-            showTip = True
+      
         
         
         try:
-            await self.view.sendWallet(user, image=image, show_tip = showTip and "v" not in args)
+            await self.view.sendWallet(user, image=image, tip=self.model.addTip(user=user, require_list=('wallet')))
         except Exception as err:
             logging.error("Error while creating/saving wallet graphic")
             logging.error(str(err))
@@ -245,7 +241,7 @@ class BuyController(Controller.Controller):
             await graphic.edit(content="❌") #TODO Better message here
             logging.error(str(err))
         else:
-            await self.view.tradeReceipt(graphic, selected, quant, costEmojiCode, costPrice)
+            await self.view.tradeReceipt(graphic, selected, quant, costEmojiCode, costPrice, self.model.addTip(user=user))
 
 
 def setup(client):

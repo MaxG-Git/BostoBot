@@ -78,6 +78,14 @@ class Model:
     def getLocalUserSettings(path = "/usr/src/app/data/settings.json"):
         return Model.getSettings(path)['userSettings']
 
+    @staticmethod
+    def getLocalHelp(path = "/usr/src/app/data/settings.json"):
+        return Model.getSettings(path)['help']
+
+    @staticmethod
+    def getLocalTips(path = "/usr/src/app/data/settings.json"):
+        return Model.getSettings(path)['tips']
+
 
 
     # Used Bot Initiation
@@ -176,6 +184,24 @@ class Model:
     @BostoConnected
     def getEmojiName(self, code, **kwargs):
         return kwargs['connection'].getEmojiName(code)
+
+    def addTip(self, user=None, origin="", exclude_list=(), require_list=None, userId=None, blank_is_none=True):
+        try:
+            if self.getSpecificUserSettings('tool_tips', user=user, userId=userId) != "TRUE": return origin if origin != "" and blank_is_none else None
+            import random
+            tipsDict = self.getLocalTips()
+            if require_list == None:
+                if len(exclude_list) > 0:
+                    tipsDict = dict(filter(lambda value: any(string not in value[0]  for string in exclude_list), tipsDict.items()))
+            else:
+                tipsDict = dict(filter(lambda value: any(string in value[0] for string in require_list), tipsDict.items()))
+            
+            return origin + "ℹ\n*" + random.choice(list(tipsDict.values())) +"*"
+
+        except Exception as err:
+            logging.info(err)
+            return origin if origin != "" and blank_is_none else None
+        
 
 
     @BostoConnected

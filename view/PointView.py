@@ -9,13 +9,13 @@ class PointView(View):
         super().__init__(client)
 
 
-    async def sendWallet(self, user, image, show_tip):
+    async def sendWallet(self, user, image, tip=None):
         content="Your wallet:"
-    
-        if show_tip:
-            content = self.sometimes(content, "\n*ℹ Use the `v` flag to see point value(s)*", 0.6)
-
         await user.send(content=content, file=image)
+        if tip != None:
+            await user.send(content=tip)
+
+
 
     
     async def tradeGetSelected(self, ctx, emojiList):
@@ -80,7 +80,7 @@ class PointView(View):
         messageAction = Action(
             check=lambda msg: msg.author.id == ctx.message.author.id and (str(msg.content) in availOptions or str(msg.content).lower() == "cancel"),
             timeout=55.0,
-        
+            filter_reaction_options = False
         )
 
         reactionAction = Action(
@@ -95,9 +95,8 @@ class PointView(View):
             embed=embed,
             )
     
-    async def tradeReceipt(self, message, selected, selectedQuant, costEmojiCode, costEmojiQuant):
+    async def tradeReceipt(self, message, selected, selectedQuant, costEmojiCode, costEmojiQuant, tip):
 
-        
         embed = discord.Embed(title="Trade Receipt", 
         description=f"Trade Completed!\nYou can check your new points with the `b/wallet` command",
         color=0x149414
@@ -113,7 +112,10 @@ class PointView(View):
          value= f"{costEmojiCode} × {costEmojiQuant}", 
          inline=True
          )
-        await message.edit(embed=embed, content=None)
+        await message.edit(embed=embed, content=tip)
+        
+            
+
 
         
 

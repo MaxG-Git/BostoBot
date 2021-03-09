@@ -25,7 +25,9 @@ class AdminView(View):
     async def getNewBostoTypeValue(self, editable, author, emojiCode):
         await editable.clear_reactions()
         editable, message = await self.getResponce(editable, 
-            actions = Action(check=lambda message: message.author.id == author.id and (message.content.isdigit() or message.content.lower() == 'cancel' )),  
+            actions = Action(
+                check=lambda message: message.author.id == author.id and (message.content.isdigit() or message.content.lower() == 'cancel', ),
+                filter_reaction_options=False),  
             question="Please enter the value of the new BostoType " + emojiCode + " or cancel to cancel", \
         )
         if message.content.lower() == 'cancel':

@@ -18,14 +18,14 @@ class StatsController(Controller.Controller):
         super().__init__(client, StatsModel)
         
 
-    @commands.command(aliases=['stats'])
+    @commands.command()
     @commands.dm_only()
     @commands.check(Controller.EnsureBostoBase)
     @commands.check(Controller.EnsureBostoUser)
-    async def info(self, ctx, *args):
+    async def stats(self, ctx, *args):
         """
         This command will show you your current Bosto-Statistics!
-        To use this command type `info` or `stats` followed by any combination of arguments (including none)
+        To use this command type `stats` followed by any combination of arguments (including none)
         Your Bosto-Stats are the points were given to you and the points that you gave
         
 
@@ -117,8 +117,11 @@ class StatsController(Controller.Controller):
 
         plt.savefig("/usr/src/app/data/plot.png", facecolor=fig.get_facecolor(), edgecolor='none')
         plt.close()
+       
         await user.send(file=imageRef, content="Your {} statistics for the past {} days:".format(emojiCode, days))
-
+        tips = self.model.addTip(user=user, exclude_list=("stats_command"))
+        if tips != None:
+            await user.send(content=tips)
         
 
 

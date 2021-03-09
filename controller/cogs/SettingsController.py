@@ -15,7 +15,6 @@ class SettingsController(Controller.Controller):
 
     @commands.command()
     @commands.dm_only()
-    @commands.check(Controller.EnsureBostoBase)
     @commands.check(Controller.EnsureBostoUser)
     async def help(self, ctx, givencommand=None):
         """
@@ -33,13 +32,14 @@ class SettingsController(Controller.Controller):
         Optional Arguments:
         ● `command` : VAR - Bypass the initial help menu by passing a command name to the command
         """
+        helpMatrix = self.model.getLocalHelp()
+        sortedCommands = dict( sorted([(com.name, com) for com in self.client.commands if not com.hidden], key=lambda x: x[0].lower()))
+        optionsDict = {helpMatrix[key]['emoji']: (key,helpMatrix[key]['short']) for key in sortedCommands.keys()}
+        
+        #options = self.view.optionDict(userCommands, [com[0] for com in userCommands.keys()])
 
-
-        userCommands = {com.name:com for com in self.client.commands if not com.hidden}
-        userCommands = dict( sorted(userCommands.items(), key=lambda x: x[0].lower()) )
-        options = self.view.optionDict(userCommands, [com[0] for com in userCommands.keys()])
-        if givencommand not in userCommands.keys():
-            question, selectedCommandName = await self.view.getHelpChoice(ctx, options)
+        if givencommand not in sortedCommands.keys():
+            question, selectedCommandName = await self.view.getHelpChoice(ctx, optionsDict)
             await question.delete()
             
             if selectedCommandName == False:
@@ -47,12 +47,11 @@ class SettingsController(Controller.Controller):
                 await bye.delete(delay=5)
                 return 
 
-            selectedCommand = userCommands[selectedCommandName]
         else:
-            selectedCommand = userCommands[givencommand]
+            selectedCommandName = givencommand
 
        
-        await self.view.getHelpSpecific(ctx,  selectedCommand.name, selectedCommand.help)
+        await self.view.getHelpSpecific(ctx,  selectedCommandName, helpMatrix[selectedCommandName]['desc'], helpMatrix[selectedCommandName]['args'])
         
 
 
@@ -72,7 +71,7 @@ class SettingsController(Controller.Controller):
         
         You can change your settings use the `change` flag by typing `settings change` and follow the prompts
 
-        This allows you to control some specific user settings for Bosto-Bot like when Bosto-Bot sends you notifications and other useful settings that may be helpful. Make sure to check the periodically as more settings will be added!
+        This allows you to control some specific user settings like when Bosto-Bot sends you notifications. Make sure to check this periodically as more settings will be added!
         
         Optional Arguments:
         ● `change` : FLAG - Get settings editing menu when this flag is used
@@ -117,7 +116,7 @@ class SettingsController(Controller.Controller):
                 await bye.delete(delay=5)
 
         else:
-            await self.view.sendSettings(ctx.message.author, settings, settingsLocal)
+            await self.view.sendSettings(ctx.message.author, settings, settingsLocal, self.model.addTip(user=ctx.message.author, exclude_list=("settings_command")))
             return
 
         

@@ -155,16 +155,16 @@ class Action:
     timeout : float = 20.0, 
     action : str = 'message', 
     reaction_options : tuple = (),
-    filter_reaction_options : bool = True,
+    filter_reaction_options = None,
     filter_channel = None,
     ):
        
         self.timeout = timeout
         self.action = action
         self.reaction_options = reaction_options
-        self.filter_reaction_options = filter_reaction_options
         self.filter_channel = filter_channel
         self.checks = [check]
+        self.filter_reaction_options = "reaction" in action.lower() if filter_reaction_options == None else filter_reaction_options
         if filter_reaction_options:
             self.checks.append(lambda payload: str(payload.emoji) in self.reaction_options)
         if isinstance(filter_channel, int):

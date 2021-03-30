@@ -103,6 +103,13 @@ class BostoConnect():
         self.cursor.callproc('add_user', (Uid, name, discriminator, bot, nick))
         return self
 
+    # Sync Wallets
+    @commit_completion
+    @sql_logger
+    def syncWalletType(self, userType):
+        self.cursor.callproc('sync_wallet_type', (userType,))
+        return self
+
 
     @commit_completion
     @sql_logger
@@ -151,12 +158,14 @@ class BostoConnect():
         self.cursor.execute(self.sql)
         return self
 
+    ''''
     @first_result_completion
     @sql_logger
     def checkUserWallet(self, userId):
         self.sql = f"SELECT COUNT(*) FROM `wallet` WHERE `id` =  {userId}"
         self.cursor.execute(self.sql)
         return self
+    '''
 
     @first_result_completion
     @sql_logger
@@ -189,11 +198,11 @@ class BostoConnect():
             return logging.error(f"Unknown field type when adding to wallet: {reactionType}")
             
         
-        self.sql= f"SELECT `{reactionType}` FROM `wallet` WHERE `id` = {userId}" 
+        self.sql= f"SELECT `amount` FROM `wallets` WHERE `usersId` = {userId} AND `typesId` = '{reactionType}'" 
         self.cursor.execute(self.sql)
         return self
     
-
+    '''!DEPRICATED
     @first_row_completion
     @sql_logger
     def getTotalWallet(self,  userId, BostoList):
@@ -202,6 +211,15 @@ class BostoConnect():
         self.sql= f"SELECT {allCols} FROM `wallet` WHERE `id` = {userId}" 
         self.cursor.execute(self.sql)
         return self
+    '''
+
+    @fetch_all_completion
+    @sql_logger
+    def getTotalWallet(self,  userId):
+        self.sql= f"SELECT `typesId`, `amount` FROM `wallets` JOIN `types` ON `wallets`.`typesId` = `types`.`name` WHERE `usersId` = {userId} ORDER BY `types`.`value`" 
+        self.cursor.execute(self.sql)
+        return self
+
 
     
 
@@ -211,9 +229,8 @@ class BostoConnect():
         
         if reactionType not in BostoList:
             return logging.error(f"Unknown field type when adding to wallet: {reactionType}")
-            
         
-        self.sql= f"UPDATE `wallet` SET `{reactionType}` = `{reactionType}` + {cost} WHERE `id` = {userId}" 
+        self.sql= f"UPDATE `wallets` SET `amount` = `amount` + {cost} WHERE `usersId` = {userId} AND typesId = '{reactionType}'"
         self.cursor.execute(self.sql)
         return self
 
@@ -225,7 +242,7 @@ class BostoConnect():
             return logging.error(f"Unknown field type when adding to wallet: {reactionType}")
             
         
-        self.sql= f"UPDATE `wallet` SET `{reactionType}` = `{reactionType}` - {cost} WHERE `id` = {userId}" 
+        self.sql= f"UPDATE `wallets` SET `amount` = `amount` - {cost} WHERE `usersId` = {userId} AND typesId = '{reactionType}'"
         self.cursor.execute(self.sql)
         return self
 
@@ -269,13 +286,8 @@ class BostoConnect():
     
     @fetch_all_completion
     @sql_logger
-    def getScoreBoard(self, pointValues: dict):
-        pvTemp = []
-        for key, value in pointValues.items():
-            pvTemp.append(f"(`{key}` * {value})")
-        pointValueString = " + ".join(pvTemp)
-        self.sql=f'SELECT @rank := @rank +1 AS "Ranking", IFNULL(`users`.`nick`,  `users`.`name`) AS "User", {pointValueString} AS "Total Bosto-Point Value" FROM `wallet` JOIN `users` ON `users`.`id` = `wallet`.`id` ORDER BY 3 DESC LIMIT 10'
-        self.cursor.execute("SET @rank=0;")
+    def getScoreBoard(self):
+        self.sql=f'SELECT * FROM `scoreboard`'
         self.cursor.execute(self.sql)
         return self
 
@@ -310,19 +322,22 @@ class BostoConnect():
         self.sql = "DELETE FROM `types` WHERE `types`.`name` = '{}'".format(name)
         self.cursor.execute(self.sql)
         return self
+    
 
+    '''!Depricated
     @commit_completion
     @sql_logger
     def addWalletType(self, typeName, after):
         self.sql = "ALTER TABLE `wallet` ADD `{}` INT NOT NULL DEFAULT '0' AFTER `{}`".format(typeName, after)
         self.cursor.execute(self.sql)
         return self
+    '''
     
 
     @commit_completion
     @sql_logger
     def removeWalletType(self, typeName):
-        self.sql = "ALTER TABLE `wallet` DROP `{}`;".format(typeName)
+        self.sql = "DELETE FROM `wallets` WHERE `typesId` = '{}';".format(typeName)
         self.cursor.execute(self.sql)
         return self
 #getSpecificUserSettings

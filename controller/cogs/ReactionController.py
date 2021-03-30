@@ -2,7 +2,6 @@ import discord
 from discord.ext import commands
 from discord.errors import HTTPException
 import logging
-import BostoBot.toolbox.BostoGeneric as BostoGeneric
 import BostoBot.controller.Controller as Controller
 from BostoBot.model.ReactionModel import ReactionModel
 from BostoBot.view.ReactionView import ReactionView
@@ -80,7 +79,6 @@ class ReactionController(Controller.Controller):
                     return
                 else:
                     await self.view.unknownAddFailure(payload.member, payload.emoji.name.capitalize())
-                    #await BostoGeneric.Err(payload.member, f"Looks like you something went wrong when adding a {payload.emoji.name.capitalize()}")
                     logging.error("Unknown error whilst adding reaction")
                     logging.error(str(result.error))
                     return
@@ -111,11 +109,7 @@ class ReactionController(Controller.Controller):
             
             reacterNotify =  self.model.getSpecificUserSettings('point_remove_notification', payload.member ) == "TRUE"
             authorNotify =  self.model.getSpecificUserSettings('point_add_notification', message.author) == "TRUE"
-            '''
-            if value > 1:
-                await payload.member.send(f"A {str(payload.emoji)} has been removed from your wallet")
-            await message.author.send(f"A Wild {str(payload.emoji)} has appeared in your wallet *from {fromName}*")
-            '''
+
             await self.view.addSuccess(payload.member, message.author, str(payload.emoji), value, fromName, reacterNotify, authorNotify)
         except HTTPException as err:
             logging.error("Failed while sending notifications to user")
@@ -168,31 +162,11 @@ class ReactionController(Controller.Controller):
                     logging.info("Tracked Point deleted assuming attemtted refund, notifying user....")
                     link = 'https://discordapp.com/channels/{}/{}/{}'.format(message.guild.id, message.channel.id, message.id)
                     return await self.view.attemptedRefundFailure(reacter, message, str(payload.emoji), payload.emoji.name.capitalize(), link)
-                    #return await BostoGeneric.Info(reacter, f"You tried to remove a {str(payload.emoji)} from *{message.author.name}'s* message!\n{payload.emoji.name.capitalize()}'s are **not** refundable!\n*(you can add the {payload.emoji.name.capitalize()} emoji back to {message.author.name}'s **original message** if you would like for free)*\nOriginal Message: {link}") # await message.add_reaction(str(payload.emoji))
                 
-            '''
-            logging.info("Attempting to remove point from database....")
-            result =  self.model.removeReaction(pointId, message, payload)
-            if not result.result:
-                logging.error("Unable to remove point")  
-                if result.reason == 'untracked':
-                    logging.error("Point seems to be un-tracked") 
-            else:
-                logging.info("Point removed")
-            
-            return    
-            '''
         except Exception as err:
             #logging.error("Unable to remove point")
             logging.error(err, True)
             return
-
-    '''
-    @commands.Cog.listener()
-    async def on_raw_message_delete(self, payload):
-        self.model.removeMessage(payload)
-        
-    '''
 
 
 def setup(client):

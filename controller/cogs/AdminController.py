@@ -47,7 +47,9 @@ class AdminController(Controller.Controller):
             else:
                 self.model.addBostoType(newReaction, value)
                 await self.view.addBostoTypeSuccess(question)
-                return await ctx.invoke(self.client.get_command('reloadcogs'))
+                await ctx.invoke(self.client.get_command('reloadcogs'))
+                self.model.syncWalletType(newReaction.emoji.name)
+                
         
     @commands.command(hidden=True)
     @commands.is_owner()

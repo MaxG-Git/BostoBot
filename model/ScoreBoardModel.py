@@ -1,7 +1,5 @@
 import logging
 import os
-import BostoBot.toolbox.BostoGeneric as BostoGeneric
-from BostoBot.toolbox.BostoGeneric import BostoResult
 import BostoBot.model.Model as Model
 
 
@@ -21,8 +19,7 @@ class ScoreBoardModel(Model.Model):
 
     @Model.BostoConnected
     def getScoreBoard(self, **kwargs):
-        emojiValue = {key: emoji['value'] for key, emoji in self.BostoPoints.items()}
-        return kwargs['connection'].getScoreBoard(emojiValue)    
+        return kwargs['connection'].getScoreBoard()
  
     
    

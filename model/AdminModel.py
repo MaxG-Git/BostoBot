@@ -3,9 +3,8 @@ import os
 import requests
 import logging
 import BostoBot.toolbox.SuperPy as IsPy
-import BostoBot.toolbox.BostoGeneric as BostoGeneric
-from BostoBot.toolbox.BostoGeneric import BostoResult
 import BostoBot.model.Model as Model
+from BostoBot.model.Model import BostoResult
 
 
 class AdminModel(Model.Model):
@@ -16,12 +15,8 @@ class AdminModel(Model.Model):
     @Model.BostoConnected
     def addBostoType(self, payload, value, **kwargs):
         name, code = payload.emoji.name, str(payload.emoji)
-        allVals = [int(point['value']) for point in self.BostoPoints.values()] + [int(value)]
-        allVals.sort()
-        position = allVals.index(int(value)) - 1
-        after = self.BostoList[position] if position > -1 else 'id'
         kwargs['connection'].addBostoType(name, code, value)
-        return kwargs['connection'].addWalletType(name, after)
+        return
     
     
     @Model.BostoConnected

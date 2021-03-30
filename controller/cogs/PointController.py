@@ -11,8 +11,13 @@ class BuyController(Controller.Controller):
     def __init__(self, client):
         super().__init__(client, PointModel, PointView)
 
-
-    
+    @commands.command()
+    @commands.dm_only()
+    @commands.check(Controller.EnsureBostoBase)
+    @commands.check(Controller.EnsureBostoUser)
+    async def testWallet(self, ctx):
+        logging.info(self.model.getTotalWallet(user=ctx.message.author, convertToDict=True))
+        logging.info(self.model.getTotalWallet(user=ctx.message.author))
 
     
     @commands.command()
@@ -30,7 +35,7 @@ class BuyController(Controller.Controller):
         user = ctx.message.author
         path = "/usr/src/app/data/wallet.png"
         image = discord.File(path)
-        totalWallet = self.model.getTotalWallet(user=user, convertToDict=True)
+        totalWallet = self.model.getTotalWallet(user=user)
         prop = font_manager.FontProperties(fname="/usr/src/app/data/fonts/uni-sans.heavy-caps.ttf")
         args = [arg.lower() for arg in args]
 
@@ -137,7 +142,7 @@ class BuyController(Controller.Controller):
         graphic = await ctx.send(selected)
         
         # Calculate Available Spending Options
-        totalWallet = self.model.getTotalWallet(user=user, convertToDict=True)
+        totalWallet = self.model.getTotalWallet(user=user)
         availPayment = []
         for emj in allEmojis.keys():
             if emj != selectedName:

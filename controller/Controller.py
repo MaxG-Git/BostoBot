@@ -8,10 +8,19 @@ from BostoBot.view.View import View
 
 
 def EnsureBostoUser(ctx):
-    BaseModel = Model(None)
-    return BaseModel.ensureUser(ctx.message.author)
+    """
+    Check function that ensures the user that is attached to the context passed
+    in is properly registered within the Bostbot Database. If user passed in is not a
+    registed then the a user will be added.
+    """
+    BaseModel = Model(None) # Create a BaseModel as the basemodel has access to registry functions
+    return BaseModel.ensureUser(ctx.message.author) #Ensure user within model
 
 def EnsureBostoBase(ctx):
+    """
+    Check function that ensures the user that a BasePoint 
+    has been set-up within the local storage.
+    """
     BaseModel = Model(None)
     return BaseModel.ensureBostoBase()
 
@@ -25,6 +34,18 @@ def ViewContextAuthor(origin):
 
 class Controller(commands.Cog) :
     def __init__(self, client, CustomModel = Model, CustomView = View):
+        """
+        This class is designed to be inherited to create custom controllers and connects a discord.ext.commands.Cog with Bostobot's 
+        models and views. This way we can extend this class and add in custom models and views to create a custom controller. Because this class
+        inherits discord.ext.commands.Cog we can use the command decorator to create new command routes.
+
+        Arguments:
+                client {discord.Client} -- The discord bot/client that is currently instantiated
+
+                CustomModel {BostoBot.model.Model} -- The BostoBot Model to be attached to this controller.
+
+                CustomView {BostoBot.model.View} -- The BostoBot View to be attached to this controller.
+        """
         self.client = client
         self.model = CustomModel(client)
         self.view = CustomView(client)

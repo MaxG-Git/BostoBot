@@ -1,7 +1,5 @@
 import logging
 import os
-import BostoBot.toolbox.BostoGeneric as BostoGeneric
-from BostoBot.toolbox.BostoGeneric import BostoResult
 import BostoBot.model.Model as Model
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
@@ -66,7 +64,7 @@ class PointModel(Model.Model):
         else:
             return kwargs['connection'].getWallet(reactionType, userId, self.BostoList)
 
-
+    '''DEPRICATED
     @Model.BostoConnected
     def getTotalWallet(self, user=None, userId=None, convertToDict=False, **kwargs):
         if userId == None:
@@ -77,7 +75,18 @@ class PointModel(Model.Model):
             return dict(zip(self.BostoList, result))
         else:
             return result
-
+    '''
+    
+    
+    @Model.BostoConnected
+    def getTotalWallet(self, user=None, userId=None, **kwargs):
+        if userId == None:
+            result = kwargs['connection'].getTotalWallet(user.id)
+        else:
+            result = kwargs['connection'].getTotalWallet(userId)
+        return dict(result)
+        
+       
     
 
         

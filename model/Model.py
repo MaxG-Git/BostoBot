@@ -1,11 +1,20 @@
 import logging
 import os
-import BostoBot.toolbox.BostoGeneric as BostoGeneric
-from BostoBot.toolbox.BostoGeneric import BostoResult
 from BostoBot.model.connect.BostoConnect import BostoConnect
 import mysql.connector.errors
 
 def BostoConnected(origin):
+    """Database Injector
+    This decorator function will inject an intstantiated BostoBot.model.connect.BostoConnect object into
+    a function's parameters to be used as a database connection. This method of parameter injection is designed
+    to allow the easy use of BostoConnect objects within a function without attaching the BostoConnect object to
+    a controller. This is done because after a controller is instantiated it remains in active memory to be used again. 
+    By passing in the BostoConnect object as a parameter we can ensure that the Database connection in the BostoConnect object
+    is terminated when the we have completed our Controller's action.
+
+    Arguments:
+        origin {Callable} -- Function to inject
+    """
     def wrapper(*args, **kwargs):
         try:
             from BostoBot.model.connect.BostoConnect import BostoConnect
@@ -21,10 +30,9 @@ def BostoConnected(origin):
 
 
 
-
-
 class Model:
     def __init__(self, client):
+
         self.client = client
         self.resetInstance()
         
@@ -97,9 +105,15 @@ class Model:
         settings = Model.getSettings()
         settings.update(allEmojis)
         Model.setSettings(settings)
+
+    # Used Bot Initiation and Globally
+    @BostoConnected
+    def SyncDBWallets(self, **kwargs):
+        for reactionType in self.BostoList:
+            kwargs['connection'].syncWalletType(reactionType)
+
+
     
-
-
     @staticmethod
     @BostoConnected
     def GetDbPoints(justNames = False, **kwargs):
@@ -116,6 +130,7 @@ class Model:
         nick = "{}".format(user.nick) if hasattr(user, 'nick') and user.nick != None else None
         name = "{}".format(user.name)
         kwargs['connection'].addUser(user.id, name, user.discriminator, bot, nick)
+        self.SyncDBWallets()
         return 
 
     # Used Globally
@@ -126,6 +141,14 @@ class Model:
         name = "'{}'".format(user.name)
         return kwargs['connection'].updateUser(user.id, name, user.discriminator, bot, nick)
 
+    # Used Globally
+    @BostoConnected
+    def syncWalletType(self, reactionType, **kwargs):
+        return kwargs['connection'].syncWalletType(reactionType)
+
+
+    
+
 
 
     # Used Globally
@@ -133,10 +156,12 @@ class Model:
     def checkUser(self, user, **kwargs):
         return kwargs['connection'].checkUser(user.id)
     
-    # Used Globally
+    #!Un-used
+    '''
     @BostoConnected
     def checkUserWallet(self, user, **kwargs):
         return kwargs['connection'].checkUserWallet(user.id)
+    '''
 
 
     @BostoConnected
@@ -222,6 +247,11 @@ class Model:
                 logging.error("Cannot verify user is admin when checking database")
                 return False
 
+class BostoResult:
+    def __init__(self, result:bool, reason:str = None, error=None, **kwargs):
+        self.result = result
+        self.reason = reason
+        self.error = error
 
 
  

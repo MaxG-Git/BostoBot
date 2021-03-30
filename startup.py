@@ -1,6 +1,5 @@
 
 from discord.ext import commands
-import BostoBot.toolbox.BostoGeneric as BostoGeneric
 import BostoBot.toolbox.creds as creds
 import discord
 import json  # -> Getting Credentials
@@ -10,7 +9,7 @@ logging.getLogger().setLevel(logging.INFO)
 
 
 
-#import my_commands
+
 
 
 class BostoHandler:
@@ -22,14 +21,16 @@ class BostoHandler:
 
     async def Reaction(self, payload):
         pass
-      # Note: This should be the controller in MVC!
+      
 
 
-def run(cogs):
-    from BostoBot.model.Model import Model
-    Model.SetLocalPoints()
-    client = commands.Bot('b/', case_insensitive=True)
-    client.remove_command("help")
+def run(cogs): 
+    from BostoBot.model.Model import Model 
+    client = commands.Bot('b/', case_insensitive=True) # Create discord client bot
+    BaseModel = Model(client)
+    BaseModel.SetLocalPoints() # Import Points Types from Database -> to Local storage
+    BaseModel.SyncDBWallets() # Sync Points Wallet Types to Database <- from Local storage
+    client.remove_command("help") #Remove help message
     # On Bot Initiation
     ready_message = 'Meow from Bosto-Bot!.\nVersion 0.0.4'
     
@@ -37,7 +38,7 @@ def run(cogs):
 
 
     @client.event
-    async def on_ready():
+    async def on_ready(): #On-ready Function loads on bot initiation
         logging.info(ready_message)
         await client.change_presence(activity=discord.Game(name="DM help for command list"))
         
@@ -62,7 +63,7 @@ def run(cogs):
         else:
             await ctx.send(f'Cog {extension.capitalize()} Not Found!')
     
- # Un-Load Cogs Command
+
 
 
     
@@ -88,6 +89,7 @@ def run(cogs):
         await msg.edit(content="Cogs Successfully reloaded")
         return await msg.delete(delay=3)
         
+
 
     @client.event
     async def on_message(message, *args):

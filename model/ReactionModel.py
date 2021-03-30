@@ -1,8 +1,7 @@
 import logging
 import os
-import BostoBot.toolbox.BostoGeneric as BostoGeneric
-from BostoBot.toolbox.BostoGeneric import BostoResult, BostoResult
 import BostoBot.model.Model as Model
+from BostoBot.model.Model import BostoResult
 
 
 

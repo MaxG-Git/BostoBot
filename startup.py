@@ -32,7 +32,7 @@ def run(cogs):
     BaseModel.SyncDBWallets() # Sync Points Wallet Types to Database <- from Local storage
     client.remove_command("help") #Remove help message
     # On Bot Initiation
-    ready_message = 'Meow from Bosto-Bot!.\nVersion 0.0.4'
+    ready_message = 'Meow from Bosto-Bot!.\nVersion 0.1.0'
     
 
 
@@ -74,13 +74,15 @@ def run(cogs):
         msg = await ctx.send("Setting Local Points")
         logging.info("Attempting to reload Cogs")
         try:
-            Model.SetLocalPoints()
+            BaseModel = Model(client)
+            BaseModel.SetLocalPoints()
             cogs = [str(ex) for ex in client.extensions]
             logging.info(cogs)
             await msg.edit(content="Reloading cogs... (This may take a second)")
             for extension in cogs:
                 client.unload_extension(extension)
                 client.load_extension(extension)
+            BaseModel.SyncDBWallets()
         except Exception as err:
             logging.error("Failed Reloading Cogs")
             logging.error(str(err))

@@ -11,14 +11,6 @@ class BuyController(Controller.Controller):
     def __init__(self, client):
         super().__init__(client, PointModel, PointView)
 
-    @commands.command()
-    @commands.dm_only()
-    @commands.check(Controller.EnsureBostoBase)
-    @commands.check(Controller.EnsureBostoUser)
-    async def testWallet(self, ctx):
-        logging.info(self.model.getTotalWallet(user=ctx.message.author, convertToDict=True))
-        logging.info(self.model.getTotalWallet(user=ctx.message.author))
-
     
     @commands.command()
     @commands.dm_only()

@@ -32,7 +32,6 @@ def BostoConnected(origin):
 
 class Model:
     def __init__(self, client):
-
         self.client = client
         self.resetInstance()
         
@@ -147,22 +146,12 @@ class Model:
         return kwargs['connection'].syncWalletType(reactionType)
 
 
-    
-
-
 
     # Used Globally
     @BostoConnected
     def checkUser(self, user, **kwargs):
         return kwargs['connection'].checkUser(user.id)
     
-    #!Un-used
-    '''
-    @BostoConnected
-    def checkUserWallet(self, user, **kwargs):
-        return kwargs['connection'].checkUserWallet(user.id)
-    '''
-
 
     @BostoConnected
     def getValue(self, payload=None, emojiName=None, **kwargs):

@@ -158,14 +158,6 @@ class BostoConnect():
         self.cursor.execute(self.sql)
         return self
 
-    ''''
-    @first_result_completion
-    @sql_logger
-    def checkUserWallet(self, userId):
-        self.sql = f"SELECT COUNT(*) FROM `wallet` WHERE `id` =  {userId}"
-        self.cursor.execute(self.sql)
-        return self
-    '''
 
     @first_result_completion
     @sql_logger
@@ -202,16 +194,6 @@ class BostoConnect():
         self.cursor.execute(self.sql)
         return self
     
-    '''!DEPRICATED
-    @first_row_completion
-    @sql_logger
-    def getTotalWallet(self,  userId, BostoList):
-        cols = list(map(lambda emoji: f"`{emoji}`", BostoList))
-        allCols = ", ".join(cols)
-        self.sql= f"SELECT {allCols} FROM `wallet` WHERE `id` = {userId}" 
-        self.cursor.execute(self.sql)
-        return self
-    '''
 
     @fetch_all_completion
     @sql_logger
@@ -220,8 +202,6 @@ class BostoConnect():
         self.cursor.execute(self.sql)
         return self
 
-
-    
 
     @commit_completion
     @sql_logger
@@ -307,7 +287,6 @@ class BostoConnect():
         return self
     
 
-         #DELETE FROM `types` WHERE `types`.`name` = 'bostogold';
 
     @commit_completion
     @sql_logger
@@ -324,23 +303,13 @@ class BostoConnect():
         return self
     
 
-    '''!Depricated
-    @commit_completion
-    @sql_logger
-    def addWalletType(self, typeName, after):
-        self.sql = "ALTER TABLE `wallet` ADD `{}` INT NOT NULL DEFAULT '0' AFTER `{}`".format(typeName, after)
-        self.cursor.execute(self.sql)
-        return self
-    '''
-    
-
     @commit_completion
     @sql_logger
     def removeWalletType(self, typeName):
         self.sql = "DELETE FROM `wallets` WHERE `typesId` = '{}';".format(typeName)
         self.cursor.execute(self.sql)
         return self
-#getSpecificUserSettings
+
 
     @first_row_completion_with_column
     @sql_logger

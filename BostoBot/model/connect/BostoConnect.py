@@ -1,6 +1,6 @@
 import logging
 import mysql.connector as mysql
-import BostoBot.toolbox.creds as creds
+import BostoBot.creds as creds
 
 
 
@@ -67,11 +67,11 @@ class BostoConnect():
         
     def connect(self):
         self.connection = mysql.connect(
-         host = creds.MYSQL_HOST,
-         port = creds.MYSQL_PORT,
-         user = creds.MYSQL_USER,
-         passwd = creds.MYSQL_PASS,
-         database = creds.MYSQL_DATABASE
+         host = creds.CONFIG['MYSQL_HOST'],
+         port = creds.CONFIG['MYSQL_PORT'],
+         user = creds.CONFIG['MYSQL_USER'],
+         passwd = creds.CONFIG['MYSQL_PASS'],
+         database = creds.CONFIG['MYSQL_DATABASE']
         )
         self.connected = True
         self.sql = ""

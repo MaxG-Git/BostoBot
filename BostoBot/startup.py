@@ -1,10 +1,11 @@
 
 from discord.ext import commands
-import BostoBot.toolbox.creds as creds
+import BostoBot.creds as creds
 import discord
 import json  # -> Getting Credentials
 import logging
 import os
+
 logging.getLogger().setLevel(logging.INFO)
 
 
@@ -26,6 +27,7 @@ class BostoHandler:
 
 def run(cogs): 
     from BostoBot.model.Model import Model 
+
     client = commands.Bot('b/', case_insensitive=True) # Create discord client bot
     BaseModel = Model(client)
     BaseModel.SetLocalPoints() # Import Points Types from Database -> to Local storage
@@ -126,4 +128,4 @@ def run(cogs):
             logging.info(f"Loading Cog/Controller: " + filename)
             client.load_extension(f'BostoBot.controller.cogs.{filename[:-3]}')
     # Login at end of script
-    client.run(creds.TOKEN)
+    client.run(creds.CONFIG['TOKEN'])

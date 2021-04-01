@@ -1,0 +1,10 @@
+{
+    "USE_ENV_VARS":false,
+    "TOKEN": "",
+    "MYSQL_HOST": "",
+    "MYSQL_USER": "",
+    "MYSQL_PASS": "",
+    "MYSQL_PORT": "",
+    "MYSQL_DATABASE": "",
+    "LOCAL_FILE_STORAGE": ""
+}

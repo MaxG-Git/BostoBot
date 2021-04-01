@@ -2,6 +2,7 @@ import logging
 import os
 from BostoBot.model.connect.BostoConnect import BostoConnect
 import mysql.connector.errors
+import BostoBot.creds as creds
 
 def BostoConnected(origin):
     """Database Injector
@@ -62,7 +63,8 @@ class Model:
         return True
 
     @staticmethod
-    def getSettings(path = "/usr/src/app/data/settings.json"):
+    def getSettings():
+        path = '{}/settings.json'.format(creds.CONFIG['BOSTOBOT_LOCAL_FILE_STORAGE'])
         import json
         
         with open(path) as f:
@@ -71,27 +73,28 @@ class Model:
 
     
     @staticmethod
-    def setSettings(settings, path = "/usr/src/app/data/settings.json"):
+    def setSettings(settings):
         import json
+        path = '{}/settings.json'.format(creds.CONFIG['BOSTOBOT_LOCAL_FILE_STORAGE'])
         with open(path, 'w') as outfile:
             json.dump(settings, outfile)
         return settings
 
     @staticmethod
-    def GetLocalPoints(path = "/usr/src/app/data/settings.json"):
-        return Model.getSettings(path)['points']
+    def GetLocalPoints():
+        return Model.getSettings()['points']
 
     @staticmethod
-    def getLocalUserSettings(path = "/usr/src/app/data/settings.json"):
-        return Model.getSettings(path)['userSettings']
+    def getLocalUserSettings():
+        return Model.getSettings()['userSettings']
 
     @staticmethod
-    def getLocalHelp(path = "/usr/src/app/data/settings.json"):
-        return Model.getSettings(path)['help']
+    def getLocalHelp():
+        return Model.getSettings()['help']
 
     @staticmethod
-    def getLocalTips(path = "/usr/src/app/data/settings.json"):
-        return Model.getSettings(path)['tips']
+    def getLocalTips():
+        return Model.getSettings()['tips']
 
 
 

@@ -7,5 +7,5 @@ import BostoBot.creds as creds
 logging.info("test")
 
 if __name__ == "__main__":
-    COGS = os.listdir('./BostoBot/controller/cogs/')
+    COGS = os.listdir('./BostoBot/controller/')
     app.run(COGS)

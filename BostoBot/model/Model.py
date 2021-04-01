@@ -102,7 +102,7 @@ class Model:
     @staticmethod
     @BostoConnected
     def SetLocalPoints(**kwargs):
-        import BostoBot.toolbox.SuperPy.iterable as IsPy
+        import BostoBot.toolbox as IsPy
         allEmojis = {'points' : {key: {"code": code, "value": int(value), "name":key} for key, code, value in tuple(kwargs['connection'].getAllEmojis())}}
         settings = Model.getSettings()
         settings.update(allEmojis)

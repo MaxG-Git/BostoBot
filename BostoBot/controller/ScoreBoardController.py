@@ -3,7 +3,7 @@ from discord.ext import commands
 import logging
 import BostoBot.controller.Controller as Controller
 from BostoBot.model.ScoreBoardModel import ScoreBoardModel
-import BostoBot.toolbox.SuperPy.iterable as IsPy
+import BostoBot.toolbox as IsPy
 from tabulate import tabulate
 import BostoBot.creds as creds
 
@@ -24,7 +24,7 @@ class ScoreBoardController(Controller.Controller):
 
         settings['score_board']['channel'] = ctx.message.channel.id
         if any(arg.isdigit() for arg in args):
-            settings['score_board']['message'] = IsPy.first(args, settings['score_board']['message'], lambda arg: arg.isdigit(), int)  
+            settings['score_board']['message'] = IsPy.first(args, settings['score_board']['message'], lambda arg: arg.isdigit(), int) 
         else:
             sbMessage = await ctx.send("Score Board")
             settings['score_board']['message'] = sbMessage.id 
@@ -45,17 +45,12 @@ class ScoreBoardController(Controller.Controller):
         data = self.model.getScoreBoard()
         headers = ["Ranking", "User", "BP Value"]
         table = tabulate(data, headers, tablefmt="pretty")
-        #table =  "`" + table.replace("\n", "`\n`") +"`"
-        
-        #emjNum = self.model.BostoBase['code'][len(self.model.BostoBase['name']) + 3:len(self.model.BostoBase['code'])-1]
-       
         embed = discord.Embed(title="Bosto ScoreBoard", 
         description="```\n"+table+"\n```", 
         color=0x0000FF,
         )
         await sbMessage.edit(content=None, embed=embed)
 
-        #await sbMessage.edit(content="`" +table +"`")
 
     
 def setup(client):

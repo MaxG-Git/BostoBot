@@ -2,7 +2,7 @@ import logging
 import os
 import requests
 import logging
-import BostoBot.toolbox.SuperPy as IsPy
+import BostoBot.toolbox as IsPy
 import BostoBot.model.Model as Model
 from BostoBot.model.Model import BostoResult
 

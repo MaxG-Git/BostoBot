@@ -1,6 +1,3 @@
-
-
-
 def first(iterable, default, condition = lambda x: True, filter_true = None, filter_false = None):
     try:
         if filter_true == None:
@@ -12,7 +9,7 @@ def first(iterable, default, condition = lambda x: True, filter_true = None, fil
             return default
         else:
             return filter_false(default)
-
+            
 def flatten(iterables, filter_result=tuple):
     if filter_result == None:
         return (elem for iterable in iterables for elem in iterable)

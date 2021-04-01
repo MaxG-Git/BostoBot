@@ -3,7 +3,7 @@ from discord.ext import commands
 import logging
 import BostoBot.controller.Controller as Controller
 from BostoBot.model.StatsModel import StatsModel
-import BostoBot.toolbox.SuperPy.iterable as IsPy
+import BostoBot.toolbox as IsPy
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
 import numpy as np

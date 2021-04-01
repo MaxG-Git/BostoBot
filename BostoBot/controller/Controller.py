@@ -2,7 +2,6 @@ import discord
 from discord.ext import commands
 import logging
 import os
-import BostoBot.toolbox.BostoGeneric as BostoGeneric
 from BostoBot.model.Model import Model
 from BostoBot.view.View import View
 

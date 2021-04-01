@@ -2,7 +2,7 @@ import discord
 from discord.ext import commands
 import logging
 import BostoBot.startup
-import BostoBot.toolbox.SuperPy.iterable as IsPy
+import BostoBot.toolbox as IsPy
 import BostoBot.controller.Controller as Controller
 from BostoBot.model.SettingsModel import SettingsModel 
 from BostoBot.view.SettingsView import SettingsView

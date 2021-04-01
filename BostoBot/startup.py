@@ -121,8 +121,9 @@ def run(cogs):
 
     # Auto Cog/Controller Loader
     for filename in cogs:
-        if filename.endswith('Controller.py') and not filename.startswith("_"):
+        logging.error(filename)
+        if filename.endswith('Controller.py') and filename != "Controller.py":
             logging.info(f"Loading Cog/Controller: " + filename)
-            client.load_extension(f'BostoBot.controller.cogs.{filename[:-3]}')
+            client.load_extension(f'BostoBot.controller.{filename[:-3]}')
     # Login at end of script
     client.run(creds.CONFIG['TOKEN'])

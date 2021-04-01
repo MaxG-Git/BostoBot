@@ -5,6 +5,7 @@ import BostoBot.controller.Controller as Controller
 from BostoBot.model.ScoreBoardModel import ScoreBoardModel
 import BostoBot.toolbox.SuperPy.iterable as IsPy
 from tabulate import tabulate
+import BostoBot.creds as creds
 
 
 class ScoreBoardController(Controller.Controller):
@@ -40,7 +41,7 @@ class ScoreBoardController(Controller.Controller):
     @commands.check(Controller.EnsureBostoBase)
     @sbSet.after_invoke
     async def sbUpdate(self, ctx=None, *args):
-        sbMessage = await self.model.getLocalScoreBoard("/usr/src/app/data/settings.json")
+        sbMessage = await self.model.getLocalScoreBoard("{}/settings.json".format(creds.CONFIG['LOCAL_FILE_STORAGE']))
         data = self.model.getScoreBoard()
         headers = ["Ranking", "User", "BP Value"]
         table = tabulate(data, headers, tablefmt="pretty")

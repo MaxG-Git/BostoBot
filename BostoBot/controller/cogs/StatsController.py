@@ -11,6 +11,7 @@ from matplotlib.cbook import get_sample_data
 import matplotlib.dates as dates
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 import datetime
+import BostoBot.creds as creds
 
 class StatsController(Controller.Controller):
     
@@ -37,12 +38,12 @@ class StatsController(Controller.Controller):
         """
         if ctx.guild is not None: return
         if not self.model.ensureUser(ctx.message.author): return
-        imageRef = discord.File("/usr/src/app/data/plot.png")
+        imageRef = discord.File("{}/plot.png".format(creds.CONFIG['LOCAL_FILE_STORAGE']))
         sep = any(arg.lower() == 'sep' for arg in args)
         days = IsPy.first(args, 7, lambda arg: arg.isdigit() and int(arg) < 32 and int(arg) > 4, int)
         emojiCode = self.model.BostoBase['code']
         user = ctx.author
-        imgPath = "/usr/src/app/data/img/{}.png".format(self.model.BostoList[0])
+        imgPath = "{}/img/{}.png".format(creds.CONFIG['LOCAL_FILE_STORAGE'], self.model.BostoList[0])
         
 
         #Get Data
@@ -115,7 +116,7 @@ class StatsController(Controller.Controller):
 
         [t.set_color('white') for t in ticks]
 
-        plt.savefig("/usr/src/app/data/plot.png", facecolor=fig.get_facecolor(), edgecolor='none')
+        plt.savefig("{}/plot.png".format(creds.CONFIG['LOCAL_FILE_STORAGE']), facecolor=fig.get_facecolor(), edgecolor='none')
         plt.close()
        
         await user.send(file=imageRef, content="Your {} statistics for the past {} days:".format(emojiCode, days))

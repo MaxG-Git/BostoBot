@@ -63,6 +63,7 @@ class BostoConnect():
     def __init__(self):
         self.connected = False
         self.connection = None
+   
         
         
     def connect(self):

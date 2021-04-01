@@ -10,9 +10,6 @@ logging.getLogger().setLevel(logging.INFO)
 
 
 
-
-
-
 class BostoHandler:
     def __init__(self, client, method='msg'):
         self.client = client

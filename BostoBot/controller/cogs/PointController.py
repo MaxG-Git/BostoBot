@@ -5,6 +5,7 @@ import BostoBot.controller.Controller as Controller
 from BostoBot.model.PointModel import PointModel 
 from BostoBot.view.PointView import PointView
 import matplotlib.font_manager as font_manager
+import BostoBot.creds as creds
 
 class BuyController(Controller.Controller):
     
@@ -25,10 +26,10 @@ class BuyController(Controller.Controller):
 
         """
         user = ctx.message.author
-        path = "/usr/src/app/data/wallet.png"
+        path = '{}/wallet.png'.format(creds.CONFIG['LOCAL_FILE_STORAGE'])
         image = discord.File(path)
         totalWallet = self.model.getTotalWallet(user=user)
-        prop = font_manager.FontProperties(fname="/usr/src/app/data/fonts/uni-sans.heavy-caps.ttf")
+        prop = font_manager.FontProperties(fname="{}/fonts/uni-sans.heavy-caps.ttf".format(creds.CONFIG['LOCAL_FILE_STORAGE']))
         args = [arg.lower() for arg in args]
 
 
@@ -67,9 +68,9 @@ class BuyController(Controller.Controller):
         Bosto-Point values is what Bosto-Bot uses to determine what to trade you when using the `trade` command
         """
         user = ctx.message.author
-        path = "/usr/src/app/data/value.png"
+        path = '{}/value.png'.format(creds.CONFIG['LOCAL_FILE_STORAGE'])
         image = discord.File(path)
-        prop = font_manager.FontProperties(fname="/usr/src/app/data/fonts/uni-sans.heavy-caps.ttf")
+        prop = font_manager.FontProperties(fname="{}/fonts/uni-sans.heavy-caps.ttf".format(creds.CONFIG['LOCAL_FILE_STORAGE']))
 
         if not self.model.GraphPoints(path, 
             marker = lambda ax, textX, textY, name: ax.text(

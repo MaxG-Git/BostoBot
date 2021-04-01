@@ -64,7 +64,7 @@ class Model:
 
     @staticmethod
     def getSettings():
-        path = '{}/settings.json'.format(creds.CONFIG['BOSTOBOT_LOCAL_FILE_STORAGE'])
+        path = '{}/settings.json'.format(creds.CONFIG['LOCAL_FILE_STORAGE'])
         import json
         
         with open(path) as f:
@@ -75,7 +75,7 @@ class Model:
     @staticmethod
     def setSettings(settings):
         import json
-        path = '{}/settings.json'.format(creds.CONFIG['BOSTOBOT_LOCAL_FILE_STORAGE'])
+        path = '{}/settings.json'.format(creds.CONFIG['LOCAL_FILE_STORAGE'])
         with open(path, 'w') as outfile:
             json.dump(settings, outfile)
         return settings

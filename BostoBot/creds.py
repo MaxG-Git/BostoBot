@@ -1,10 +1,10 @@
 import os
-import json
-config = os.path.abspath("./config.json")
-io = open(config, 'r')
+import sys
 
-if not CONFIG['USE_ENV_VARS']:
-    CONFIG = json.load(io)
+if '-env' not in sys.argv:
+    import json
+    config = os.path.abspath("./config.json")
+    CONFIG = json.load(open(config, 'r'))
 else:
     CONFIG = {
         'TOKEN': os.getenv('BOSTOBOT_TOKEN'),
@@ -15,5 +15,7 @@ else:
         'MYSQL_DATABASE': os.getenv('BOSTOBOT_MYSQL_DATABASE'),
         'LOCAL_FILE_STORAGE': os.getenv('BOSTOBOT_LOCAL_FILE_STORAGE')
     }
+
+
 
 

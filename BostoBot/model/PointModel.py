@@ -9,6 +9,7 @@ import matplotlib.dates as dates
 from matplotlib.offsetbox import OffsetImage, AnnotationBbox
 import matplotlib.font_manager as font_manager
 import asyncio
+import BostoBot.creds as creds
 
 
 class PointModel(Model.Model):
@@ -16,6 +17,8 @@ class PointModel(Model.Model):
     def __init__(self, client):
         super().__init__(client)
 
+
+    
     def GraphPoints(self, 
         path, 
         marker = lambda ax, textX, textY, name: ax.text(textX, textY, name),
@@ -42,13 +45,13 @@ class PointModel(Model.Model):
             textY = yPos(order)
             imgX = 0.976
             imgY = order
-            ab = AnnotationBbox(OffsetImage(plt.imread('/usr/src/app/data/img/{}.png'.format(name.lower())), zoom), (imgX, imgY), frameon=False)
+            ab = AnnotationBbox(OffsetImage(plt.imread( '{}/img/{}.png'.format(creds.CONFIG['LOCAL_FILE_STORAGE'], name.lower())) , zoom), (imgX, imgY), frameon=False)
             ab.set_zorder(-1)
             ax.add_artist(ab)
             marker(ax, textX, textY, name)
             #ax.text(textX, textY, marker(name), **textOptions)
 
-            
+            path = '{}/wallet.png'.format(creds.CONFIG['LOCAL_FILE_STORAGE'])
         
         plt.axis('off')
         plt.savefig(path, transparent=True)

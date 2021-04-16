@@ -65,9 +65,6 @@ class View:
             await mixedMessable.edit(**options)
             return mixedMessable
         
-    
-    
-    #Note Add SometimeSay
     @staticmethod
     def sometimes(original, options, percent : float = 0.5):
         import random
@@ -111,13 +108,9 @@ class View:
                 
                 # Add reaction Options
                 for emoji in act.reaction_options:
-                    await question.add_reaction(emoji)
-            
-               
-                 
+                    await question.add_reaction(emoji)          
 
         try:
-            
             pending_tasks = [self.client.wait_for(act.action, timeout = act.timeout, check = act.check) for act in actions]
             reponce, pending_tasks = await asyncio.wait(pending_tasks, return_when=return_when)
             
@@ -127,10 +120,8 @@ class View:
             if return_when == asyncio.FIRST_COMPLETED:
                 reponce = list(reponce).pop().result()
             
-                
             if clearReactions :
                 await question.clear_reactions()
-
 
             if condition == None:
                 return question, reponce
@@ -144,7 +135,6 @@ class View:
             if editOnFail:
                 question = await self.sendEdit(question, timeOutMessage, embed=None)
 
-            
             return question, False
 
 

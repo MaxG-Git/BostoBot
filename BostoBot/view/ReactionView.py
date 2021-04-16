@@ -38,6 +38,4 @@ class ReactionView(View):
         embed.set_author(name=message.author.name, icon_url=message.author.avatar_url)
         await sendable.send(embed=embed)
         await sendable.send(content=f"{emojiName}'s are **not** refundable!\n*(you can add the {emojiName} emoji back to {message.author.name}'s **original message** if you would like for free)*\nOriginal Link: "+link)
-        #await View.info(sendable, f"You tried to remove a {emojiCode} from *{message.author.name}'s* message!\n{emojiName}'s are **not** refundable!\n*(you can add the {emojiName} emoji back to {messageAuthor}'s **original message** if you would like for free)*\nOriginal Message: {link}")
-
-        
+       

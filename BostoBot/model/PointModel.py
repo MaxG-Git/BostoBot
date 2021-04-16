@@ -67,18 +67,6 @@ class PointModel(Model.Model):
         else:
             return kwargs['connection'].getWallet(reactionType, userId, self.BostoList)
 
-    '''DEPRICATED
-    @Model.BostoConnected
-    def getTotalWallet(self, user=None, userId=None, convertToDict=False, **kwargs):
-        if userId == None:
-            result = kwargs['connection'].getTotalWallet(user.id, self.BostoList)
-        else:
-            result = kwargs['connection'].getTotalWallet(userId, self.BostoList)
-        if convertToDict:
-            return dict(zip(self.BostoList, result))
-        else:
-            return result
-    '''
     
     
     @Model.BostoConnected

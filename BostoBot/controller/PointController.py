@@ -149,15 +149,7 @@ class BuyController(Controller.Controller):
         availPayment.append("❌")
 
         emojiSelection, payload = await self.view.tradeGetCost(ctx, selected, selectedVal, availPayment, selectedUrl)
-        '''
-        emojiSelection, payload = await self.view.getResponce(ctx, 
-            replyFilter=lambda payload: payload.user_id == ctx.message.author.id, 
-            question= f"*Trading for {selected} (value: {selectedVal})*\nPlease Choose what you want to **offer me** for {selected}(s) - *(or ❌ to cancel)*",
-            reactionOptions= availPayment,
-            clearReactions=False,
-            action='raw_reaction_add'
-            )
-        '''
+  
 
         await emojiSelection.delete()
         
@@ -189,17 +181,7 @@ class BuyController(Controller.Controller):
             needed = (selectedVal-costEmojiTotalValue) // costEmojiVal
             cantBuy = await ctx.send(f"Meow\nLooks like you don't have enough points for a {selected} right now.\nYou have {costEmojiTotal} {costEmojiCode}'s you need **{needed}** more for a {selected}")
             return await cantBuy.delete(delay=5)
-        '''
-        #await textGraphic.edit(content=f"Trading with {costEmojiCode} *(value: {costEmojiTotalValue})*  ➡  Trading for {selected} *(value: {selectedVal})*")
-        msg1 = await ctx.send(f"*Trading with {costEmojiCode} (value: {costEmojiVal})*  ➡  *Trading for {selected} (value: {selectedVal})*\nYou have {costEmojiTotal} {costEmojiCode}\nYou can create a total of {availOptionsString} {selected}")
         
-        msg2, quantityResponce = await self.view.getResponce(ctx, 
-            replyFilter=lambda msg: msg.author.id == ctx.message.author.id and (str(msg.content) in availOptions or str(msg.content).lower() == "cancel"),
-            question= f"Please respond with how many {selected} to create *(or `cancel` to cancel)*",
-            timeout=30.0,
-            clearReactions=False,
-            )
-        '''
         quantityMessage, quantityResponce = await self.view.tradeGetQuant(ctx, selected, selectedVal, costEmojiCode, costEmojiVal, costEmojiTotal, availOptions, availOptionsString, selectedUrl)
         
         

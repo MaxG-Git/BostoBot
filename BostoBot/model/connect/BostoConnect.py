@@ -100,7 +100,6 @@ class BostoConnect():
     @commit_completion
     @sql_logger
     def addUser(self, Uid, name, discriminator, bot, nick):
-        #vals = [str(i) for i in [Uid, name, discriminator, bot, nick]]
         self.cursor.callproc('add_user', (Uid, name, discriminator, bot, nick))
         return self
 

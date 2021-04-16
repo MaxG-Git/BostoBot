@@ -8,7 +8,6 @@ class SettingsView(View):
 
 
     async def getHelpChoice(self, ctx, options : dict):
-        #optList = ["● {} {}".format(key, val) for key, val in options.items()]
         embed = discord.Embed(
             title="Help",
             description="Below is a list of all commands.\nYou **click on the reaction that corresponds with a command** to get more info on the command.\n\n**Commands:**",
@@ -68,9 +67,6 @@ class SettingsView(View):
 
     
     async def getSettingsChangeOption(self, user, settings, settingsLocal):
-       
-        
-        #small_letters = dict(zip(list(map(chr, range(ord('a'), ord('a')+len(settings.keys())))), settings.keys()))
         settingList = self.optionDict(settingsLocal.keys())
     
         optList = ["● {} {}".format(key, settingsLocal[val]['name']) for key, val in settingList.items()]
@@ -110,10 +106,6 @@ class SettingsView(View):
         return await self.getResponce(user, embed=embed, actions=action)
 
  
-
-    
-
-   
     @staticmethod
     def onOffLabel(value):
         return ":white_check_mark:" if value == "TRUE" else "❌"

@@ -114,21 +114,3 @@ class PointView(View):
          )
         await message.edit(embed=embed, content=tip)
         
-            
-
-
-        
-
-
-    
-    
-'''
-msg1 = await ctx.send(f"*Trading with {costEmojiCode} (value: {costEmojiVal})*  ➡  *Trading for {selected} (value: {selectedVal})*\nYou have {costEmojiTotal} {costEmojiCode}\nYou can create a total of {availOptionsString} {selected}")
-        
-        msg2, quantityResponce = await self.view.getResponce(ctx, 
-            check=lambda msg: msg.author.id == ctx.message.author.id and (str(msg.content) in availOptions or str(msg.content).lower() == "cancel"),
-            question= f"Please respond with how many {selected} to create *(or `cancel` to cancel)*",
-            timeout=30.0,
-            clearReactions=False,
-            )
-'''
